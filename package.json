@@ -1,0 +1,9 @@
+{
+  "name": "goldmund-2026",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Der Goldene Kongress — landing page serverless backend",
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}
