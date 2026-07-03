@@ -364,12 +364,13 @@
     document.documentElement.style.overflow='';
     setTimeout(function(){ if(loader.parentNode) loader.parentNode.removeChild(loader); },650);
   }
-  video.addEventListener('ended',hideIntro);
+  function holdThenHide(){ setTimeout(hideIntro,5000); }
+  video.addEventListener('ended',holdThenHide);
   video.addEventListener('error',hideIntro);
   loader.addEventListener('click',hideIntro);
   var p=video.play();
   if(p&&p.catch) p.catch(hideIntro);
-  setTimeout(hideIntro,8000);
+  setTimeout(hideIntro,20000);
 })();
 </script>
 
