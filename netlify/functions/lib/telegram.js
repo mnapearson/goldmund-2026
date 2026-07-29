@@ -1,20 +1,8 @@
-const FACTIONS = {
-  M: { de: 'Mystiker', en: 'Mystics' },
-  S: { de: 'Surrealisten', en: 'Surrealists' },
-  R: { de: 'Romantiker', en: 'Romantics' },
-  T: { de: 'Techies', en: 'Technologists' },
-  K: { de: 'Kollektivisten', en: 'Collectivists' },
-};
-
 function esc(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function bar(score, max) {
-  const width = 10;
-  const filled = max > 0 ? Math.round((score / max) * width) : 0;
-  return '█'.repeat(filled) + '░'.repeat(width - filled);
-}
+const PAYMENT_REF = 'Nachname, Vorname + Kostenbeteiligung Goldmund 2026';
 
 function bankBlock() {
   return {
@@ -23,36 +11,29 @@ function bankBlock() {
     bic: process.env.PAYMENT_BIC || '',
     holder: process.env.PAYMENT_HOLDER || '',
     deadline: process.env.PAYMENT_DEADLINE || '',
+    wero: process.env.PAYMENT_WERO_PHONE || '',
   };
-}
-
-function factionBlock(scores, isDe) {
-  const max = Math.max(1, ...Object.values(scores));
-  return Object.keys(FACTIONS)
-    .map((f) => `${FACTIONS[f][isDe ? 'de' : 'en']}: ${bar(scores[f] || 0, max)} (${scores[f] || 0})`)
-    .join('\n');
 }
 
 function buildConfirmationMessage(entry, lang) {
   const isDe = lang !== 'en';
   const bank = bankBlock();
-  const top = FACTIONS[entry.topFaction] ? FACTIONS[entry.topFaction][isDe ? 'de' : 'en'] : '—';
-  const factionLines = factionBlock(entry.scores, isDe);
 
   if (isDe) {
     return (
       `<b>Willkommen beim Goldenen Kongress, ${esc(entry.name)}!</b>\n\n` +
       `🏕 <b>Unterkunft:</b> ${esc(entry.housing)}\n` +
       `💶 <b>Beitrag:</b> €${entry.contribution}\n\n` +
-      `<b>Deine Fraktionsneigung:</b> ${esc(top)}\n<pre>${factionLines}</pre>\n\n` +
+      `Du wurdest einer geheimen Fraktion zugeteilt — welche das ist, erfährst du beim Kongress.\n\n` +
       `<b>Bankdaten für deine Überweisung:</b>\n` +
       `Betrag: €${entry.contribution}\n` +
       `Bank: ${esc(bank.bank)}\n` +
       `IBAN: ${esc(bank.iban)}\n` +
       `BIC: ${esc(bank.bic)}\n` +
-      `Kontoinhaber: ${esc(bank.holder)}\n` +
-      `Verwendungszweck: GM2026 — ${esc(entry.name)}\n` +
+      `Empfänger: ${esc(bank.holder)}\n` +
+      `Verwendungszweck: ${esc(PAYMENT_REF)}\n` +
       (bank.deadline ? `Zahlungsfrist: ${esc(bank.deadline)}\n` : '') +
+      (bank.wero ? `\nAlternativ per Wero: Telefonnummer ${esc(bank.wero)}\n` : '') +
       `\n⚠️ <i>Dein Platz ist erst bestätigt, wenn die Zahlung eingegangen ist.</i>\n\n` +
       `Fragen? Antworte einfach auf diese Nachricht.`
     );
@@ -61,15 +42,16 @@ function buildConfirmationMessage(entry, lang) {
     `<b>Welcome to the Golden Congress, ${esc(entry.name)}!</b>\n\n` +
     `🏕 <b>Housing:</b> ${esc(entry.housing)}\n` +
     `💶 <b>Contribution:</b> €${entry.contribution}\n\n` +
-    `<b>Your faction leaning:</b> ${esc(top)}\n<pre>${factionLines}</pre>\n\n` +
+    `You've been assigned to a secret faction — which one will be revealed at the congress.\n\n` +
     `<b>Bank details for your transfer:</b>\n` +
     `Amount: €${entry.contribution}\n` +
     `Bank: ${esc(bank.bank)}\n` +
     `IBAN: ${esc(bank.iban)}\n` +
     `BIC: ${esc(bank.bic)}\n` +
-    `Account holder: ${esc(bank.holder)}\n` +
-    `Reference: GM2026 — ${esc(entry.name)}\n` +
+    `Recipient: ${esc(bank.holder)}\n` +
+    `Reference: ${esc(PAYMENT_REF)}\n` +
     (bank.deadline ? `Payment deadline: ${esc(bank.deadline)}\n` : '') +
+    (bank.wero ? `\nAlternatively via Wero: Phone number ${esc(bank.wero)}\n` : '') +
     `\n⚠️ <i>Your spot is only confirmed once payment has arrived.</i>\n\n` +
     `Questions? Just reply to this message.`
   );
@@ -86,9 +68,10 @@ function buildReminderMessage(entry, lang) {
       `Bank: ${esc(bank.bank)}\n` +
       `IBAN: ${esc(bank.iban)}\n` +
       `BIC: ${esc(bank.bic)}\n` +
-      `Kontoinhaber: ${esc(bank.holder)}\n` +
-      `Verwendungszweck: GM2026 — ${esc(entry.name)}\n` +
+      `Empfänger: ${esc(bank.holder)}\n` +
+      `Verwendungszweck: ${esc(PAYMENT_REF)}\n` +
       (bank.deadline ? `Zahlungsfrist: ${esc(bank.deadline)}\n` : '') +
+      (bank.wero ? `\nAlternativ per Wero: Telefonnummer ${esc(bank.wero)}\n` : '') +
       `\n⚠️ <i>Dein Platz ist erst bestätigt, wenn die Zahlung eingegangen ist.</i>`
     );
   }
@@ -99,9 +82,10 @@ function buildReminderMessage(entry, lang) {
     `Bank: ${esc(bank.bank)}\n` +
     `IBAN: ${esc(bank.iban)}\n` +
     `BIC: ${esc(bank.bic)}\n` +
-    `Account holder: ${esc(bank.holder)}\n` +
-    `Reference: GM2026 — ${esc(entry.name)}\n` +
+    `Recipient: ${esc(bank.holder)}\n` +
+    `Reference: ${esc(PAYMENT_REF)}\n` +
     (bank.deadline ? `Payment deadline: ${esc(bank.deadline)}\n` : '') +
+    (bank.wero ? `\nAlternatively via Wero: Phone number ${esc(bank.wero)}\n` : '') +
     `\n⚠️ <i>Your spot is only confirmed once payment has arrived.</i>`
   );
 }

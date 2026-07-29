@@ -7,6 +7,7 @@ function bankBlock() {
     bic: process.env.PAYMENT_BIC || '',
     holder: process.env.PAYMENT_HOLDER || '',
     deadline: process.env.PAYMENT_DEADLINE || '',
+    wero: process.env.PAYMENT_WERO_PHONE || '',
   };
 }
 

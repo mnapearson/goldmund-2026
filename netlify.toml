@@ -7,7 +7,7 @@
   # exclude from the secret scanner. PAYMENT_HOLDER coincidentally matches
   # the event's own name ("Goldmund"), which appears throughout index.html's
   # marketing copy and otherwise fails the build as a false positive.
-  SECRETS_SCAN_OMIT_KEYS = "PAYMENT_BANK,PAYMENT_IBAN,PAYMENT_BIC,PAYMENT_HOLDER,PAYMENT_DEADLINE"
+  SECRETS_SCAN_OMIT_KEYS = "PAYMENT_BANK,PAYMENT_IBAN,PAYMENT_BIC,PAYMENT_HOLDER,PAYMENT_DEADLINE,PAYMENT_WERO_PHONE"
 
 [functions]
   node_bundler = "esbuild"

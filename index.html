@@ -221,17 +221,6 @@
   .compass-wrap{display:flex; flex-direction:column; align-items:center;}
   .compass-figure{position:relative; width:min(420px,86vw); aspect-ratio:1; margin:0 auto;}
 
-  .faction-legend{
-    display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px;
-    background:var(--ink); border:1.5px solid var(--ink); margin-top:48px; width:100%;
-  }
-  .faction-cell{background:var(--bone); padding:20px 18px;}
-  .faction-cell .fc-letter{font-family:'Oswald',sans-serif; font-weight:700; font-size:26px; line-height:1;}
-  .faction-cell .fc-name{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:.14em; font-size:12px; font-weight:600; margin:6px 0 8px;}
-  .faction-cell .fc-desc{font-family:'Fraunces',serif; font-size:13.5px; line-height:1.55; color:#43403b;}
-  .faction-cell .fc-bar{height:4px; background:var(--bone-2); margin-top:12px;}
-  .faction-cell .fc-bar span{display:block; height:100%; width:0; background:var(--brass); transition:width .5s;}
-
   /* ====================================================
      SIGNUP
      ==================================================== */
@@ -507,13 +496,15 @@ const FACTIONS = {
 };
 
 const INVITE = {
-de:`<p class="drop">Verehrte Goldmünder, vom 1. bis 4. des goldenen Oktobers rufen wir die schönen Seelen, die verrückten Visionäre und freien Geister unter uns zusammen zu einer einzigartigen Versammlung: <strong>dem Goldenen Kongress</strong>.</p>
+de:`<p class="drop">Verehrte Goldmünder,</p>
+<p>Vom 1. bis 4. des goldenen Oktobers rufen wir die schönen Seelen, die verrückten Visionäre und freien Geister unter uns zusammen zu einer einzigartigen Versammlung: <strong>dem Goldenen Kongress</strong>.</p>
 <p>Einen Monat zuvor wird in Sachsen-Anhalt erstmals in der deutschen Geschichte eine rechtsextreme Partei im Parlament eine Mehrheit gewonnen haben. Die Lage im Land ist also: ganz und gar nicht goldig. Aber sollen wir uns deswegen unter einer Samtdecke verkrabbeln und hoffen, dass uns das nichts angeht?</p>
 <p>Der Goldmund beschreitet diesmal völlig neues Terrain und hält der grauen Realität so viel Pomp wie möglich entgegen. Wenn ringsum die dumpfen Faschisten und kalten Algorithmen übernehmen, drücken wir so richtig auf die Goldtube und inszenieren eine immersive soziale Oper im Herz der Finsternis. Das ist natürlich völlig verrückt, wer soll das denn können, aber darum geht es ja.</p>
 <p>Hundert Goldmünder versammeln sich in der sachsen-anhaltischen Geisterstadt Zeitz und verwandeln eine ruinöse Jugendstil-Bibliothek, eine entweihte gotische Kirche und verlassene Gründerzeit-Häuser in Orte der Resonanz. Die Menschen und Mauern sollen zum Klingen, Singen und Schwingen gebracht werden. Denn unser Kongress ist kein normaler Kongress in Schlips und Kragen — er singt und lacht und tanzt.</p>
 <p>Jede Teilnehmerin und jeder Teilnehmer des Goldenen Kongresses wird einer Fraktion zugeteilt, die eine eigene Vision der besseren Welt vertritt. In musikalischen Workshops, Konzerten, Raves, Versammlungen, Performances und Begegnungen entsteht eine Vielstimmigkeit in der Frage, wie wir uns das gute Leben vorstellen. Der Goldene Kongress ist ein Festival, Theaterstück und Rollenspiel zugleich.</p>
 <p class="signoff">Aber nur durch euch kommt die Schönheit in die Welt.</p>`,
-en:`<p class="drop">Esteemed Goldmünder, from the 1st to the 4th of a golden October, we are calling together the beautiful souls, the mad visionaries, and the free spirits among us for a unique gathering: <strong>the Golden Congress</strong>.</p>
+en:`<p class="drop">Esteemed Goldmünder,</p>
+<p>From the 1st to the 4th of a golden October, we are calling together the beautiful souls, the mad visionaries, and the free spirits among us for a unique gathering: <strong>the Golden Congress</strong>.</p>
 <p>By then, a right-wing extremist party will have secured a parliamentary majority in Saxony-Anhalt — a first in German history. The situation in the state is, frankly, anything but golden. But should we therefore crawl under a velvet blanket and hope it's none of our business?</p>
 <p>This time, Goldmund is venturing into entirely new territory, countering drab reality with as much pomp as possible. As dull-witted fascists and cold algorithms take over all around us, we're squeezing the gold paint tube for all it's worth and staging an immersive social opera in the heart of darkness. It's completely mad, of course — who could possibly pull this off? — but that is precisely the point.</p>
 <p>A hundred Goldmünder will gather in the ghost town of Zeitz, transforming a dilapidated Art Nouveau library, a deconsecrated Gothic church, and abandoned Wilhelminian-era houses into places of resonance. We aim to make both people and walls ring, sing, and vibrate. For our congress is no ordinary affair of suits and ties — it sings, laughs, and dances.</p>
@@ -524,14 +515,14 @@ en:`<p class="drop">Esteemed Goldmünder, from the 1st to the 4th of a golden Oc
 const REGISTER = {
 de:[
   {label:"Der Ort", body:"Die historische Altstadt von Zeitz wird zu unserem Spielplatz. Das gemeinsame Hauptgebäude und Safer Space ist die <strong>Alte Bibliothek</strong>, in der der Goldmund vor drei Jahren gegründet wurde."},
-  {label:"Der Preis", body:"Du bezahlst zwischen <strong>111 und 444 Euro</strong>, abhängig von deiner Selbsteinschätzung. Niemand soll wegen finanzieller Hürden vom Goldmund ausgeschlossen sein. Der Preis enthält Essen, Getränke und Programm."},
+  {label:"Der Preis", body:"Du bezahlst zwischen <strong>150 und 200 Euro</strong>, abhängig von deiner Selbsteinschätzung. Niemand soll wegen finanzieller Hürden vom Goldmund ausgeschlossen sein. Der Preis enthält Essen, Getränke und Programm. <strong>Die Unterkunft ist nicht im Preis enthalten.</strong>"},
   {label:"Die Unterkunft", body:"Die Unterkunft erfolgt diesmal dezentral in <strong>Hotels, Zimmern und Indoor-Camping</strong> rund um den Veranstaltungsort. Oktobernächte sind kalt — plane entsprechend."},
   {label:"Die Teilnehmenden", body:"<strong>100 Menschen</strong> können am Goldenen Kongress teilnehmen. Jede und jeder nimmt gleichzeitig teil und veranstaltet den Kongress. Niemand verdient Geld oder Ruhm. Alles passiert aus reiner Liebe und Unvernunft."},
   {label:"Die Regeln", body:"Wir verpflichten uns auf die <strong>Prinzipien des Burning Man</strong>. Das bedeutet vor allem: radikale Selbstorganisation. Goldmund ist ein Spektakel ohne Zuschauer. Jede und jeder ist gleichermaßen Veranstaltende*r und Teilnehmer*in. Niemand bekommt Geld oder Ruhm — wir tun es aus Verbundenheit, Abenteuerlust und Freude. Goldmund ist ein kuratierter Experimentierraum, in dem wir mit der Wirklichkeit spielen."}
 ],
 en:[
   {label:"The Venue", body:"The historic old town of Zeitz becomes our playground. The central hub and safer space is the <strong>Old Library</strong>, where Goldmund was founded three years ago."},
-  {label:"The Price", body:"You pay between <strong>€111 and €444</strong>, based on self-assessment. No one should be excluded from Goldmund due to financial barriers. The price includes food, drinks, and the program."},
+  {label:"The Price", body:"You pay between <strong>€150 and €200</strong>, based on self-assessment. No one should be excluded from Goldmund due to financial barriers. The price includes food, drinks, and the program. <strong>Accommodation is not included.</strong>"},
   {label:"Accommodation", body:"This time, accommodation is decentralized across <strong>hotels, private rooms, and indoor camping</strong> around the venue. October nights are cold — plan accordingly."},
   {label:"Participants", body:"<strong>100 people</strong> can attend the Golden Congress. Everyone participates and co-creates simultaneously. No one earns money or fame — everything happens out of pure love and unreasonableness."},
   {label:"The Rules", body:"We commit to the <strong>principles of Burning Man</strong>. Above all, this means radical self-organization. Goldmund is a spectacle without spectators — everyone is equally organizer and participant. No one receives money or fame for their contributions. We do it out of connection, adventure, and joy. Goldmund is a curated space for experimentation where we play with reality."}
@@ -546,81 +537,81 @@ const HOUSING = [
 
 const QUESTIONS = [
 {de:"Du findest eine Tür ohne Haus. Was ist dahinter?", en:"You find a door standing alone. What lies behind it?", opts:[
-  {f:"M", de:"Ein Raum, in dem man seinem zukünftigen Selbst begegnet.", en:"A room where you meet your future self."},
   {f:"S", de:"Eine Landschaft, die nur im Traum existiert.", en:"A landscape that exists only in dreams."},
   {f:"R", de:"Ein Ort, an dem eine verlorene Liebe wartet.", en:"A place where a lost love is waiting."},
+  {f:"M", de:"Ein Raum, in dem man seinem zukünftigen Selbst begegnet.", en:"A room where you meet your future self."},
   {f:"T", de:"Ein Portal in eine neue Dimension der Möglichkeiten.", en:"A portal to a new dimension of possibilities."},
   {f:"K", de:"Ein Versammlungsraum für Menschen, die du nie getroffen hast.", en:"A gathering space for people you've never met."}
 ]},
 {de:"Welche Karte würdest du wählen?", en:"Which card would you choose?", opts:[
-  {f:"M", de:"Tarotkarte", en:"Tarot card"},{f:"S", de:"Jokerkarte", en:"Joker card"},{f:"R", de:"Tanzkarte", en:"Dance card"},{f:"T", de:"Kreditkarte", en:"Credit card"},{f:"K", de:"Postkarte", en:"Postcard"}
+  {f:"M", de:"Tarotkarte", en:"Tarot card"},{f:"T", de:"Kreditkarte", en:"Credit card"},{f:"R", de:"Tanzkarte", en:"Dance card"},{f:"K", de:"Postkarte", en:"Postcard"},{f:"S", de:"Jokerkarte", en:"Joker card"}
 ]},
 {de:"Welche Erfindung würde die Welt am meisten verändern?", en:"Which invention would change the world most?", opts:[
-  {f:"M", de:"Ein gemeinsames Bewusstsein.", en:"A shared consciousness."},{f:"S", de:"Ein Automat, aus dem immer eine andere Substanz kommt.", en:"A machine dispensing a different substance each time."},{f:"R", de:"MDMA im Trinkwasser.", en:"MDMA in the drinking water."},{f:"T", de:"Eine Maschine, die menschliche Fähigkeiten erweitert.", en:"A machine that enhances human capability."},{f:"K", de:"Ein Faschismus-Detektor.", en:"A fascism detector."}
+  {f:"T", de:"Eine Maschine, die menschliche Fähigkeiten erweitert.", en:"A machine that enhances human capability."},{f:"M", de:"Ein gemeinsames Bewusstsein.", en:"A shared consciousness."},{f:"K", de:"Ein Faschismus-Detektor.", en:"A fascism detector."},{f:"R", de:"MDMA im Trinkwasser.", en:"MDMA in the drinking water."},{f:"S", de:"Ein Automat, aus dem immer eine andere Substanz kommt.", en:"A machine dispensing a different substance each time."}
 ]},
 {de:"Welche Landschaft zieht dich am stärksten an?", en:"Which landscape draws you in most?", opts:[
-  {f:"M", de:"Ein alter Wald.", en:"An ancient forest."},{f:"S", de:"Eine Stadt, in der die Gebäude atmen.", en:"A city where the buildings breathe."},{f:"R", de:"Ein Häuschen am Meer.", en:"A cottage by the sea."},{f:"T", de:"High Rise in Singapur.", en:"A high-rise in Singapore."},{f:"K", de:"Ein gemeinsames Schloss.", en:"A shared castle."}
+  {f:"T", de:"High Rise in Singapur.", en:"A high-rise in Singapore."},{f:"S", de:"Eine Stadt, in der die Gebäude atmen.", en:"A city where the buildings breathe."},{f:"R", de:"Ein Häuschen am Meer.", en:"A cottage by the sea."},{f:"K", de:"Ein gemeinsames Schloss.", en:"A shared castle."},{f:"M", de:"Ein alter Wald.", en:"An ancient forest."}
 ]},
 {de:"Was sollte eine ideale Gesellschaft besitzen?", en:"What should an ideal society possess?", opts:[
-  {f:"M", de:"Weisheit.", en:"Wisdom."},{f:"S", de:"Vorstellungskraft.", en:"Imagination."},{f:"R", de:"Schönheit.", en:"Beauty."},{f:"T", de:"Innovation.", en:"Innovation."},{f:"K", de:"Zusammenhalt.", en:"Solidarity."}
+  {f:"K", de:"Zusammenhalt.", en:"Solidarity."},{f:"M", de:"Weisheit.", en:"Wisdom."},{f:"R", de:"Schönheit.", en:"Beauty."},{f:"S", de:"Vorstellungskraft.", en:"Imagination."},{f:"T", de:"Innovation.", en:"Innovation."}
 ]},
 {de:"Du erfindest eine neue Feiertags-Tradition. Was passiert?", en:"You invent a new holiday tradition. What happens?", opts:[
-  {f:"M", de:"Alle meditieren zusammen.", en:"Everyone meditates together."},{f:"S", de:"Die Regeln ändern sich jedes Jahr zufällig.", en:"The rules change randomly every year."},{f:"R", de:"Es werden Beerdigungen für die Lebenden veranstaltet.", en:"Funerals are held for the living."},{f:"T", de:"Play Fight Daaaaay!!!", en:"Play Fight Daaaaay!!!"},{f:"K", de:"Lange Tische auf den Straßen, alle essen zusammen.", en:"Long tables on the streets, everyone eats together."}
+  {f:"R", de:"Es werden Beerdigungen für die Lebenden veranstaltet.", en:"Funerals are held for the living."},{f:"M", de:"Alle meditieren zusammen.", en:"Everyone meditates together."},{f:"K", de:"Lange Tische auf den Straßen, alle essen zusammen.", en:"Long tables on the streets, everyone eats together."},{f:"T", de:"Play Fight Daaaaay!!!", en:"Play Fight Daaaaay!!!"},{f:"S", de:"Die Regeln ändern sich jedes Jahr zufällig.", en:"The rules change randomly every year."}
 ]},
 {de:"Was möchtest du nachts am liebsten finden?", en:"What would you most like to find at night?", opts:[
-  {f:"M", de:"Eine Vision.", en:"A vision."},{f:"S", de:"Ein Kaninchen.", en:"A rabbit."},{f:"R", de:"Einen hotten Menschen im Bett.", en:"A hot person in bed."},{f:"T", de:"Eine neue Idee.", en:"A new idea."},{f:"K", de:"Eine lustige Gruppe zum Um-die-Häuser-Ziehen.", en:"A fun group to go out with."}
+  {f:"S", de:"Ein Kaninchen.", en:"A rabbit."},{f:"K", de:"Eine lustige Gruppe zum Um-die-Häuser-Ziehen.", en:"A fun group to go out with."},{f:"M", de:"Eine Vision.", en:"A vision."},{f:"T", de:"Eine neue Idee.", en:"A new idea."},{f:"R", de:"Einen hotten Menschen im Bett.", en:"A hot person in bed."}
 ]},
 {de:"Was wäre deine liebste Superpower?", en:"Your favorite superpower?", opts:[
-  {f:"M", de:"Telepathie", en:"Telepathy"},{f:"S", de:"Telekinese", en:"Telekinesis"},{f:"R", de:"Zeitreise", en:"Time travel"},{f:"T", de:"Unsterblichkeit", en:"Immortality"},{f:"K", de:"Friedensstiftung", en:"Peacemaking"}
+  {f:"M", de:"Telepathie", en:"Telepathy"},{f:"S", de:"Telekinese", en:"Telekinesis"},{f:"K", de:"Friedensstiftung", en:"Peacemaking"},{f:"T", de:"Unsterblichkeit", en:"Immortality"},{f:"R", de:"Zeitreise", en:"Time travel"}
 ]},
 {de:"Welche Bewegung würdest du gründen?", en:"What movement would you found?", opts:[
-  {f:"M", de:"Eine Schule des inneren Erwachens.", en:"A school of inner awakening."},{f:"S", de:"Ein Labor für absurde Möglichkeiten.", en:"A laboratory for absurd possibilities."},{f:"R", de:"Einen Salon für verlorene Schönheit.", en:"A salon for lost beauty."},{f:"T", de:"International School for Human Enhancement.", en:"International School for Human Enhancement."},{f:"K", de:"Ein Ökodorf.", en:"An eco-village."}
+  {f:"K", de:"Ein Ökodorf.", en:"An eco-village."},{f:"T", de:"International School for Human Enhancement.", en:"International School for Human Enhancement."},{f:"S", de:"Ein Labor für absurde Möglichkeiten.", en:"A laboratory for absurd possibilities."},{f:"R", de:"Einen Salon für verlorene Schönheit.", en:"A salon for lost beauty."},{f:"M", de:"Eine Schule des inneren Erwachens.", en:"A school of inner awakening."}
 ]},
 {de:"Welche Stimme möchtest du in einer Vision hören?", en:"Whose voice would you hear in a vision?", opts:[
-  {f:"M", de:"Gott, bist du das?", en:"God, is that you?"},{f:"S", de:"Eine Stimme, die Esperanto spricht.", en:"A voice speaking Esperanto."},{f:"R", de:"Die Stimme eines Menschen, den du vermisst.", en:"The voice of someone you miss."},{f:"T", de:"Die Stimme von meinem Bot.", en:"My bot's voice."},{f:"K", de:"Karl Marx", en:"Karl Marx"}
+  {f:"R", de:"Die Stimme eines Menschen, den du vermisst.", en:"The voice of someone you miss."},{f:"T", de:"Die Stimme von meinem Bot.", en:"My bot's voice."},{f:"M", de:"Gott, bist du das?", en:"God, is that you?"},{f:"K", de:"Karl Marx", en:"Karl Marx"},{f:"S", de:"Eine Stimme, die Esperanto spricht.", en:"A voice speaking Esperanto."}
 ]},
 {de:"Was ist wichtiger für die Zukunft?", en:"What matters more for the future?", opts:[
-  {f:"M", de:"Bewusstsein.", en:"Consciousness."},{f:"S", de:"Fantasie.", en:"Imagination."},{f:"R", de:"Gefühl.", en:"Emotion."},{f:"T", de:"Wissen.", en:"Knowledge."},{f:"K", de:"Gemeinschaft.", en:"Community."}
+  {f:"M", de:"Bewusstsein.", en:"Consciousness."},{f:"K", de:"Gemeinschaft.", en:"Community."},{f:"R", de:"Gefühl.", en:"Emotion."},{f:"S", de:"Fantasie.", en:"Imagination."},{f:"T", de:"Wissen.", en:"Knowledge."}
 ]},
 {de:"Welche Musik zieht dich an?", en:"What music appeals to you?", opts:[
-  {f:"M", de:"Bach in der Thomaskirche.", en:"Bach at St. Thomas Church."},{f:"S", de:"Fisches Nachtgesang von Ringelnatz.", en:"Ringelnatz's 'Fisches Nachtgesang'."},{f:"R", de:"Mariah Carey.", en:"Mariah Carey."},{f:"T", de:"Techno auf die Zwölf.", en:"Hard-hitting techno."},{f:"K", de:"Ein Kneipenchor.", en:"A pub choir."}
+  {f:"R", de:"Mariah Carey.", en:"Mariah Carey."},{f:"K", de:"Ein Kneipenchor.", en:"A pub choir."},{f:"M", de:"Bach in der Thomaskirche.", en:"Bach at St. Thomas Church."},{f:"T", de:"Techno auf die Zwölf.", en:"Hard-hitting techno."},{f:"S", de:"Fisches Nachtgesang von Ringelnatz.", en:"Ringelnatz's 'Fisches Nachtgesang'."}
 ]},
 {de:"Was sollte ein neues Museum zeigen?", en:"What should a new museum show?", opts:[
-  {f:"M", de:"Die dunkle Macht der Sex Magic.", en:"The dark power of sex magic."},{f:"S", de:"Fotos, die andere in Automaten vergessen haben.", en:"Photos others left behind in booths."},{f:"R", de:"Cyanotypie.", en:"Cyanotype."},{f:"T", de:"Kybernetik und Kollektivismus.", en:"Cybernetics and collectivism."},{f:"K", de:"Die Geschichte resilienter Gemeinschaften.", en:"The history of resilient communities."}
+  {f:"R", de:"Cyanotypie.", en:"Cyanotype."},{f:"M", de:"Die dunkle Macht der Sex Magic.", en:"The dark power of sex magic."},{f:"S", de:"Fotos, die andere in Automaten vergessen haben.", en:"Photos others left behind in booths."},{f:"K", de:"Die Geschichte resilienter Gemeinschaften.", en:"The history of resilient communities."},{f:"T", de:"Kybernetik und Kollektivismus.", en:"Cybernetics and collectivism."}
 ]},
 {de:"Welche Bibliothek würdest du betreten?", en:"Which library would you enter?", opts:[
-  {f:"M", de:"Die Bibliothek von Hogwarts.", en:"The Hogwarts library."},{f:"S", de:"Die Bibliothek der Illusionen.", en:"The library of illusions."},{f:"R", de:"Eine Bibliothek voller Briefe und Tagebücher.", en:"A library of letters and diaries."},{f:"T", de:"Mir reicht Wikipedia.", en:"Wikipedia is enough for me."},{f:"K", de:"Der Mensch ist der beste Wissensspeicher.", en:"Humans are the best repository of knowledge."}
+  {f:"R", de:"Eine Bibliothek voller Briefe und Tagebücher.", en:"A library of letters and diaries."},{f:"S", de:"Die Bibliothek der Illusionen.", en:"The library of illusions."},{f:"T", de:"Mir reicht Wikipedia.", en:"Wikipedia is enough for me."},{f:"M", de:"Die Bibliothek von Hogwarts.", en:"The Hogwarts library."},{f:"K", de:"Der Mensch ist der beste Wissensspeicher.", en:"Humans are the best repository of knowledge."}
 ]},
 {de:"Was fehlt der Welt am meisten?", en:"What does the world lack most?", opts:[
-  {f:"M", de:"Sinn.", en:"Meaning."},{f:"S", de:"Verrücktheit.", en:"Madness."},{f:"R", de:"Liebe.", en:"Love."},{f:"T", de:"Freiheit.", en:"Freedom."},{f:"K", de:"Vertrauen.", en:"Trust."}
-]}
+  {f:"M", de:"Sinn.", en:"Meaning."},{f:"T", de:"Freiheit.", en:"Freedom."},{f:"K", de:"Vertrauen.", en:"Trust."},{f:"S", de:"Verrücktheit.", en:"Madness."},{f:"R", de:"Liebe.", en:"Love."}
+]},
 ];
 
 const T = {
   de:{ step:["Wer bist du","Wo du schläfst","Dein Beitrag"], continue:"Weiter", back:"Zurück", submit:"Anmeldung absenden",
        name:"Vollständiger Name", arrival:"Anreisetag", contribTitle:"Dein Beitrag",
-       contribNote:"Zahle nach Selbsteinschätzung — so wie es für dich stimmt.",
-       contribFine:"Die Zahlung erfolgt separat per Überweisung oder PayPal — Details folgen per E-Mail.",
+       contribNote:"Zahle nach Selbsteinschätzung — so wie es für dich stimmt. Die Unterkunft ist nicht im Preis enthalten.",
+       contribFine:"Die Zahlung erfolgt separat per Überweisung — Details folgen per E-Mail.",
        review:"Überprüfen", leaning:"Tendenz zu", placement:"Die finale Fraktionszuteilung erfolgt durch die Organisator:innen.",
-       successH:"Du bist auf der Liste.", successP:"Willkommen, zukünftige*r Goldmünder. Deine Fraktionszuteilung und alle Details folgen per E-Mail.", successS:"Wir sehen uns in Zeitz.",
+       successH:"Du bist auf der Liste.", successP:"Willkommen, zukünftige*r Goldmund. Deine Fraktionszuteilung und alle Details folgen per E-Mail.", successS:"Wir sehen uns in Zeitz.",
        q:"Frage", housing:"Unterkunft", contribution:"Beitrag", faction:"Fraktion", selectDay:"Auswählen…",
        errName:"Bitte gib mindestens Name und E-Mail an.", errHouse:"Bitte wähle deine Unterkunft.",
        submitting:"Wird gesendet…", regId:"Anmeldenummer",
        telegramBtn:"📬 Bestätigung auf Telegram erhalten", telegramNote:"Du erhältst dort deine Fraktionsergebnisse und die Zahlungsdaten.",
-       bankTitle:"Bankdaten für deine Überweisung", bankAmount:"Betrag", bankBank:"Bank", bankIban:"IBAN", bankBic:"BIC", bankHolder:"Kontoinhaber", bankRef:"Verwendungszweck", bankDeadline:"Zahlungsfrist",
+       bankTitle:"Bankdaten für deine Überweisung", bankAmount:"Betrag", bankBank:"Bank", bankIban:"IBAN", bankBic:"BIC", bankHolder:"Empfänger", bankRef:"Verwendungszweck", bankDeadline:"Zahlungsfrist", bankWero:"Alternativ per Wero: Telefonnummer",
        bankPendingNote:"Dein Platz ist erst bestätigt, wenn die Zahlung eingegangen ist.",
        errSubmitH:"Fast geschafft.", errSubmitP:"Deine Anmeldung konnte nicht automatisch gespeichert werden. Bitte kontaktiere die Organisator*innen, damit sie dich manuell eintragen — du kannst aber schon jetzt mit den unten stehenden Bankdaten überweisen." },
   en:{ step:["Who you are","Where you sleep","Your contribution"], continue:"Continue", back:"Back", submit:"Submit registration",
        name:"Full name", arrival:"Arrival day", contribTitle:"Your contribution",
-       contribNote:"Pay on a sliding scale — whatever feels right for you.",
-       contribFine:"Payment is handled separately by bank transfer or PayPal — details follow by email.",
+       contribNote:"Pay on a sliding scale — whatever feels right for you. Accommodation is not included.",
+       contribFine:"Payment is handled separately by bank transfer — details follow by email.",
        review:"Review", leaning:"Leaning toward", placement:"Final faction placement is curated by the organizers.",
-       successH:"You're on the list.", successP:"Welcome, future Goldmünder. Your faction and all details will follow by email.", successS:"See you in Zeitz.",
+       successH:"You're on the list.", successP:"Welcome, future Goldmund. Your faction and all details will follow by email.", successS:"See you in Zeitz.",
        q:"Question", housing:"Housing", contribution:"Contribution", faction:"Faction", selectDay:"Select…",
        errName:"Please enter at least your name and email.", errHouse:"Please choose your housing.",
        submitting:"Submitting…", regId:"Registration ID",
        telegramBtn:"📬 Get confirmation on Telegram", telegramNote:"You'll receive your faction results and payment details there.",
-       bankTitle:"Bank details for your transfer", bankAmount:"Amount", bankBank:"Bank", bankIban:"IBAN", bankBic:"BIC", bankHolder:"Account holder", bankRef:"Reference", bankDeadline:"Payment deadline",
+       bankTitle:"Bank details for your transfer", bankAmount:"Amount", bankBank:"Bank", bankIban:"IBAN", bankBic:"BIC", bankHolder:"Recipient", bankRef:"Reference", bankDeadline:"Payment deadline", bankWero:"Alternatively via Wero: Phone number",
        bankPendingNote:"Your spot is only confirmed once payment has arrived.",
        errSubmitH:"Almost there.", errSubmitP:"Your registration couldn't be saved automatically. Please contact the organizers so they can register you manually — you can already transfer using the bank details below." }
 };
@@ -641,7 +632,7 @@ en:`<p>The Golden Congress is more than a weekend — it is an immersive role-pl
 <p>To find out which faction you'll be assigned to, complete the questionnaire during registration. <strong>We won't reveal which factions exist or how many</strong> — that's part of the game.</p>`
 };
 
-let state = { lang:'de', step:0, data:{name:"",email:"",telegram:"",phone:"",arrival:"",housing:"",contribution:222,answers:{}} };
+let state = { lang:'de', step:0, data:{name:"",email:"",telegram:"",phone:"",arrival:"",housing:"",contribution:150,answers:{}} };
 const TOTAL = 3 + QUESTIONS.length + 2;
 function t(){ return T[state.lang]; }
 
@@ -715,6 +706,7 @@ function renderPersonal(body,nav){
       <div class="field"><label>${x.arrival}</label>
         <select id="f-arrival">
           <option value="">${x.selectDay}</option>
+          <option value="wed" ${state.data.arrival==='wed'?'selected':''}>${state.lang==='de'?'Mittwoch (Aufbau)':'Wednesday (Build)'}</option>
           <option value="thu" ${state.data.arrival==='thu'?'selected':''}>${state.lang==='de'?'Donnerstag (Aufbau)':'Thursday (Build)'}</option>
           <option value="fri" ${state.data.arrival==='fri'?'selected':''}>${state.lang==='de'?'Freitag':'Friday'}</option>
           <option value="sat" ${state.data.arrival==='sat'?'selected':''}>${state.lang==='de'?'Samstag':'Saturday'}</option>
@@ -755,8 +747,8 @@ function renderContribution(body,nav){
     <div class="q-progress">${state.lang==='de'?'Schritt':'Step'} 3 — ${x.step[2]}</div>
     <p style="font-family:'Fraunces',serif; text-align:center; max-width:420px; margin:0 auto 6px; color:#43403b;">${x.contribNote}</p>
     <div class="slider-value">€<span id="cd">${state.data.contribution}</span></div>
-    <input type="range" min="111" max="444" step="1" value="${state.data.contribution}" oninput="updContrib(this.value)">
-    <div class="slider-note">€111 — €444</div>
+    <input type="range" min="150" max="200" step="1" value="${state.data.contribution}" oninput="updContrib(this.value)">
+    <div class="slider-note">€150 — €200</div>
     <p style="font-family:'Fraunces',serif; font-size:13px; text-align:center; color:#55514b; margin-top:24px;">${x.contribFine}</p>`;
   nav.innerHTML=`<button class="btn" onclick="goBack()">← ${x.back}</button><button class="btn primary" onclick="nextStep()">${x.continue} →</button>`;
 }
@@ -836,8 +828,9 @@ function renderSuccess(body,nav){
       <div class="rv">${x.bankIban}: ${esc(bank.iban)}</div>
       <div class="rv">${x.bankBic}: ${esc(bank.bic)}</div>
       <div class="rv">${x.bankHolder}: ${esc(bank.holder)}</div>
-      <div class="rv">${x.bankRef}: GM2026 — ${esc(state.data.name)}</div>
+      <div class="rv">${x.bankRef}: Nachname, Vorname + Kostenbeteiligung Goldmund 2026</div>
       ${bank.deadline?`<div class="rv">${x.bankDeadline}: ${esc(bank.deadline)}</div>`:''}
+      ${bank.wero?`<div class="rv" style="margin-top:8px;">${x.bankWero} ${esc(bank.wero)}</div>`:''}
       <p style="font-family:'Fraunces',serif; font-size:12.5px; font-style:italic; color:#55514b; margin-top:10px;">${x.bankPendingNote}</p>
     </div>` : '';
 
