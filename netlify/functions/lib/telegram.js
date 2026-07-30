@@ -46,7 +46,7 @@ function buildConfirmationMessage(entry, lang) {
       (bank.wero ? `\nAlternativ per Wero: Telefonnummer ${esc(bank.wero)}\n` : '') +
       `\n⚠️ <i>Dein Platz ist erst bestätigt, wenn die Zahlung eingegangen ist.</i>\n` +
       `Du erhältst nicht nochmal eine separate Anmeldebestätigung. Bitte überweise den Betrag am besten direkt. Nach dem 15.09. werden alle nicht überwiesenen Anmeldungen an Personen auf der Warteliste vergeben. Du siehst, dass Überweisung und Anmeldung erfolgreich waren, wenn du in die private Gäste-Telegram-Gruppe hinzugefügt wurdest.\n\n` +
-      `Fragen? Antworte einfach auf diese Nachricht.`
+      `Fragen? Die beantworten wir in deiner Fraktions-Gruppe — du wirst vor dem Kongress dazu eingeladen.`
     );
   }
   return (
@@ -66,7 +66,7 @@ function buildConfirmationMessage(entry, lang) {
     (bank.wero ? `\nAlternatively via Wero: Phone number ${esc(bank.wero)}\n` : '') +
     `\n⚠️ <i>Your spot is only confirmed once payment has arrived.</i>\n` +
     `You won't receive a separate registration confirmation. Please transfer the amount as soon as possible. After September 15th, any unpaid registrations will be given to people on the waitlist. You'll know your transfer and registration were successful once you've been added to the private guest Telegram group.\n\n` +
-    `Questions? Just reply to this message.`
+    `Questions? We'll answer those in your faction group chat — you'll be invited ahead of the congress.`
   );
 }
 
