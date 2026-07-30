@@ -1,7 +1,7 @@
 const { google } = require('googleapis');
 
 const SHEET_NAME = 'Registrations';
-const DATA_RANGE = `${SHEET_NAME}!A2:R`;
+const DATA_RANGE = `${SHEET_NAME}!A2:T`;
 
 let sheetsClient = null;
 
@@ -29,7 +29,7 @@ async function appendRow(row) {
   const sheets = await getSheets();
   await sheets.spreadsheets.values.append({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A:R`,
+    range: `${SHEET_NAME}!A:T`,
     valueInputOption: 'USER_ENTERED',
     insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [row] },

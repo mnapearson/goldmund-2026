@@ -244,13 +244,14 @@
 
   .field{margin-bottom:22px;}
   .field label{display:block; margin-bottom:7px; font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:.16em; font-size:11px; font-weight:500; color:#55514b;}
-  .field input, .field select{
+  .field input, .field select, .field textarea{
     width:100%; background:rgba(255,255,255,.55); border:none;
     border-bottom:1.5px solid var(--ink); color:var(--ink);
     padding:11px 8px; font-size:16px; font-family:'Fraunces',serif;
   }
-  .field input:focus, .field select:focus{outline:none; border-bottom-color:var(--red); background:rgba(255,255,255,.9);}
-  .field input::placeholder{color:rgba(16,12,12,.32);}
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none; border-bottom-color:var(--red); background:rgba(255,255,255,.9);}
+  .field input::placeholder, .field textarea::placeholder{color:rgba(16,12,12,.32);}
+  .field textarea{resize:vertical; min-height:70px; font-family:'Fraunces',serif;}
   .field-row{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
   @media(max-width:520px){.field-row{grid-template-columns:1fr;}}
 
@@ -374,7 +375,7 @@
     <div class="hero-center">
       <div class="hero-presents">Goldmund lädt ein zum</div>
       <h1 class="hero-title">Goldenen<br><span class="gold-line">Kongress</span></h1>
-      <p class="hero-sub">Eine immersive soziale Oper im Herzen der Finsternis</p>
+      <p class="hero-sub">Ein immersives soziales Rollenspiel im Herzen der Finsternis</p>
       <div class="hero-meta">
         <span>1.–4. Oktober</span><span class="dot"></span><span>2026</span><span class="dot"></span><span>100 Plätze</span>
       </div>
@@ -499,14 +500,14 @@ const INVITE = {
 de:`<p class="drop">Verehrte Goldmünder,</p>
 <p>Vom 1. bis 4. des goldenen Oktobers rufen wir die schönen Seelen, die verrückten Visionäre und freien Geister unter uns zusammen zu einer einzigartigen Versammlung: <strong>dem Goldenen Kongress</strong>.</p>
 <p>Einen Monat zuvor wird in Sachsen-Anhalt erstmals in der deutschen Geschichte eine rechtsextreme Partei im Parlament eine Mehrheit gewonnen haben. Die Lage im Land ist also: ganz und gar nicht goldig. Aber sollen wir uns deswegen unter einer Samtdecke verkrabbeln und hoffen, dass uns das nichts angeht?</p>
-<p>Der Goldmund beschreitet diesmal völlig neues Terrain und hält der grauen Realität so viel Pomp wie möglich entgegen. Wenn ringsum die dumpfen Faschisten und kalten Algorithmen übernehmen, drücken wir so richtig auf die Goldtube und inszenieren eine immersive soziale Oper im Herz der Finsternis. Das ist natürlich völlig verrückt, wer soll das denn können, aber darum geht es ja.</p>
+<p>Der Goldmund beschreitet diesmal völlig neues Terrain und hält der grauen Realität so viel Pomp wie möglich entgegen. Wenn ringsum die dumpfen Faschisten und kalten Algorithmen übernehmen, drücken wir so richtig auf die Goldtube und inszenieren ein immersives soziales Rollenspiel im Herz der Finsternis. Das ist natürlich völlig verrückt, wer soll das denn können, aber darum geht es ja.</p>
 <p>Hundert Goldmünder versammeln sich in der sachsen-anhaltischen Geisterstadt Zeitz und verwandeln eine ruinöse Jugendstil-Bibliothek, eine entweihte gotische Kirche und verlassene Gründerzeit-Häuser in Orte der Resonanz. Die Menschen und Mauern sollen zum Klingen, Singen und Schwingen gebracht werden. Denn unser Kongress ist kein normaler Kongress in Schlips und Kragen — er singt und lacht und tanzt.</p>
 <p>Jede Teilnehmerin und jeder Teilnehmer des Goldenen Kongresses wird einer Fraktion zugeteilt, die eine eigene Vision der besseren Welt vertritt. In musikalischen Workshops, Konzerten, Raves, Versammlungen, Performances und Begegnungen entsteht eine Vielstimmigkeit in der Frage, wie wir uns das gute Leben vorstellen. Der Goldene Kongress ist ein Festival, Theaterstück und Rollenspiel zugleich.</p>
 <p class="signoff">Aber nur durch euch kommt die Schönheit in die Welt.</p>`,
 en:`<p class="drop">Esteemed Goldmünder,</p>
 <p>From the 1st to the 4th of a golden October, we are calling together the beautiful souls, the mad visionaries, and the free spirits among us for a unique gathering: <strong>the Golden Congress</strong>.</p>
 <p>By then, a right-wing extremist party will have secured a parliamentary majority in Saxony-Anhalt — a first in German history. The situation in the state is, frankly, anything but golden. But should we therefore crawl under a velvet blanket and hope it's none of our business?</p>
-<p>This time, Goldmund is venturing into entirely new territory, countering drab reality with as much pomp as possible. As dull-witted fascists and cold algorithms take over all around us, we're squeezing the gold paint tube for all it's worth and staging an immersive social opera in the heart of darkness. It's completely mad, of course — who could possibly pull this off? — but that is precisely the point.</p>
+<p>This time, Goldmund is venturing into entirely new territory, countering drab reality with as much pomp as possible. As dull-witted fascists and cold algorithms take over all around us, we're squeezing the gold paint tube for all it's worth and staging an immersive social role-playing game in the heart of darkness. It's completely mad, of course — who could possibly pull this off? — but that is precisely the point.</p>
 <p>A hundred Goldmünder will gather in the ghost town of Zeitz, transforming a dilapidated Art Nouveau library, a deconsecrated Gothic church, and abandoned Wilhelminian-era houses into places of resonance. We aim to make both people and walls ring, sing, and vibrate. For our congress is no ordinary affair of suits and ties — it sings, laughs, and dances.</p>
 <p>Every participant is assigned to a faction representing its own vision of a better world. Through musical workshops, concerts, raves, assemblies, performances, and encounters, a polyphony of voices emerges regarding how we envision the good life. The Golden Congress is a festival, a theater piece, and a role-playing game all rolled into one.</p>
 <p class="signoff">But it is only through you that beauty enters the world.</p>`
@@ -516,15 +517,15 @@ const REGISTER = {
 de:[
   {label:"Der Ort", body:"Die historische Altstadt von Zeitz wird zu unserem Spielplatz. Das gemeinsame Hauptgebäude und Safer Space ist die <strong>Alte Bibliothek</strong>, in der der Goldmund vor drei Jahren gegründet wurde."},
   {label:"Der Preis", body:"Du bezahlst zwischen <strong>150 und 200 Euro</strong>, abhängig von deiner Selbsteinschätzung. Niemand soll wegen finanzieller Hürden vom Goldmund ausgeschlossen sein. Der Preis enthält Essen, Getränke und Programm. <strong>Die Unterkunft ist nicht im Preis enthalten.</strong>"},
-  {label:"Die Unterkunft", body:"Die Unterkunft erfolgt diesmal dezentral in <strong>Hotels, Zimmern und Indoor-Camping</strong> rund um den Veranstaltungsort. Oktobernächte sind kalt — plane entsprechend."},
-  {label:"Die Teilnehmenden", body:"<strong>100 Menschen</strong> können am Goldenen Kongress teilnehmen. Jede und jeder nimmt gleichzeitig teil und veranstaltet den Kongress. Niemand verdient Geld oder Ruhm. Alles passiert aus reiner Liebe und Unvernunft."},
+  {label:"Die Unterkunft", body:"Die Unterkunft erfolgt diesmal dezentral in <strong>Hotels, Zimmern und Indoor-Camping</strong> rund um den Veranstaltungsort. Oktobernächte sind kalt — plane entsprechend. Frühstück ist nicht inklusive, kann aber dazu gebucht werden."},
+  {label:"Die Teilnehmenden", body:"<strong>100 Menschen</strong> können am Goldenen Kongress teilnehmen. Jede und jeder nimmt gleichzeitig teil und veranstaltet den Kongress. Alles passiert aus reiner Liebe und Unvernunft."},
   {label:"Die Regeln", body:"Wir verpflichten uns auf die <strong>Prinzipien des Burning Man</strong>. Das bedeutet vor allem: radikale Selbstorganisation. Goldmund ist ein Spektakel ohne Zuschauer. Jede und jeder ist gleichermaßen Veranstaltende*r und Teilnehmer*in. Niemand bekommt Geld oder Ruhm — wir tun es aus Verbundenheit, Abenteuerlust und Freude. Goldmund ist ein kuratierter Experimentierraum, in dem wir mit der Wirklichkeit spielen."}
 ],
 en:[
   {label:"The Venue", body:"The historic old town of Zeitz becomes our playground. The central hub and safer space is the <strong>Old Library</strong>, where Goldmund was founded three years ago."},
   {label:"The Price", body:"You pay between <strong>€150 and €200</strong>, based on self-assessment. No one should be excluded from Goldmund due to financial barriers. The price includes food, drinks, and the program. <strong>Accommodation is not included.</strong>"},
-  {label:"Accommodation", body:"This time, accommodation is decentralized across <strong>hotels, private rooms, and indoor camping</strong> around the venue. October nights are cold — plan accordingly."},
-  {label:"Participants", body:"<strong>100 people</strong> can attend the Golden Congress. Everyone participates and co-creates simultaneously. No one earns money or fame — everything happens out of pure love and unreasonableness."},
+  {label:"Accommodation", body:"This time, accommodation is decentralized across <strong>hotels, private rooms, and indoor camping</strong> around the venue. October nights are cold — plan accordingly. Breakfast is not included but can be booked additionally."},
+  {label:"Participants", body:"<strong>100 people</strong> can attend the Golden Congress. Everyone participates and co-creates simultaneously. Everything happens out of pure love and unreasonableness."},
   {label:"The Rules", body:"We commit to the <strong>principles of Burning Man</strong>. Above all, this means radical self-organization. Goldmund is a spectacle without spectators — everyone is equally organizer and participant. No one receives money or fame for their contributions. We do it out of connection, adventure, and joy. Goldmund is a curated space for experimentation where we play with reality."}
 ]};
 
@@ -533,6 +534,18 @@ const HOUSING = [
   {id:"library", de:["Zimmer in der Bibliothek","Vor Ort, wenige Plätze. Mittendrin — schlaflose Nächte garantiert."], en:["Library Room","On-site, few spots. In the thick of it — sleepless nights."]},
   {id:"indoor", de:["Indoor-Camping","Eigene Matratze vor Ort, falls Platz. Schlafsack mitbringen."], en:["Indoor Camping","Own mattress on-site, if space. Bring a sleeping bag."]},
   {id:"camper", de:["Camper / Auto an der Kirche","Selbstversorgt. Oktobernächte sind kalt — gut vorbereitet kommen."], en:["Camper / Car by the Church","Self-sufficient. October nights are cold — come prepared."]}
+];
+
+const INVOLVEMENT_OPTIONS = [
+  {id:"workshop", de:"Workshop geben", en:"Give a workshop"},
+  {id:"dj", de:"Auflegen (DJ)", en:"DJ"},
+  {id:"buildstrike", de:"Aufbau & Abbau", en:"Build & strike"},
+  {id:"decoration", de:"Dekoration", en:"Decoration"},
+  {id:"cooking", de:"Kochen", en:"Cooking"},
+  {id:"performance", de:"Performance", en:"Cabaret"},
+  {id:"bar", de:"Bar-Schicht", en:"Bar shift"},
+  {id:"awareness", de:"Awareness-Schicht", en:"Awareness shift"},
+  {id:"other", de:"Sonstiges", en:"Other"}
 ];
 
 const QUESTIONS = [
@@ -597,7 +610,8 @@ const T = {
        q:"Frage", housing:"Unterkunft", contribution:"Beitrag", faction:"Fraktion", selectDay:"Auswählen…",
        errName:"Bitte gib mindestens Name und E-Mail an.", errHouse:"Bitte wähle deine Unterkunft.",
        submitting:"Wird gesendet…", regId:"Anmeldenummer",
-       telegramBtn:"📬 Bestätigung auf Telegram erhalten", telegramNote:"Du erhältst dort deine Zahlungsdaten und alle weiteren Infos.",
+       telegramBtn:"📬 Bestätigung auf Telegram erhalten", telegramNote:"Deine Zahlungsdetails erhältst du über unseren Telegram-Bot.",
+       involvementTitle:"Wie möchtest du dich einbringen?", involvementDetailsLabel:"Erzähl uns mehr — was bringst du mit?",
        bankTitle:"Bankdaten für deine Überweisung", bankAmount:"Betrag", bankBank:"Bank", bankIban:"IBAN", bankBic:"BIC", bankHolder:"Empfänger", bankRef:"Verwendungszweck", bankDeadline:"Zahlungsfrist", bankWero:"Alternativ per Wero: Telefonnummer",
        bankPendingNote:"Dein Platz ist erst bestätigt, wenn die Zahlung eingegangen ist.",
        errSubmitH:"Fast geschafft.", errSubmitP:"Deine Anmeldung konnte nicht automatisch gespeichert werden. Bitte kontaktiere die Organisator*innen, damit sie dich manuell eintragen — du kannst aber schon jetzt mit den unten stehenden Bankdaten überweisen." },
@@ -610,7 +624,8 @@ const T = {
        q:"Question", housing:"Housing", contribution:"Contribution", faction:"Faction", selectDay:"Select…",
        errName:"Please enter at least your name and email.", errHouse:"Please choose your housing.",
        submitting:"Submitting…", regId:"Registration ID",
-       telegramBtn:"📬 Get confirmation on Telegram", telegramNote:"You'll receive your payment details and further info there.",
+       telegramBtn:"📬 Get confirmation on Telegram", telegramNote:"You'll receive your payment details via our Telegram bot.",
+       involvementTitle:"How would you like to contribute?", involvementDetailsLabel:"Tell us more — what will you bring?",
        bankTitle:"Bank details for your transfer", bankAmount:"Amount", bankBank:"Bank", bankIban:"IBAN", bankBic:"BIC", bankHolder:"Recipient", bankRef:"Reference", bankDeadline:"Payment deadline", bankWero:"Alternatively via Wero: Phone number",
        bankPendingNote:"Your spot is only confirmed once payment has arrived.",
        errSubmitH:"Almost there.", errSubmitP:"Your registration couldn't be saved automatically. Please contact the organizers so they can register you manually — you can already transfer using the bank details below." }
@@ -632,8 +647,8 @@ en:`<p>The Golden Congress is more than a weekend — it is an immersive role-pl
 <p>To find out which faction you'll be assigned to, complete the questionnaire during registration. <strong>We won't reveal which factions exist or how many</strong> — that's part of the game.</p>`
 };
 
-let state = { lang:'de', step:0, data:{name:"",email:"",telegram:"",phone:"",arrival:"",housing:"",contribution:150,answers:{}} };
-const TOTAL = 3 + QUESTIONS.length + 2;
+let state = { lang:'de', step:0, data:{name:"",email:"",telegram:"",phone:"",arrival:"",housing:"",contribution:150,answers:{},involvement:[],involvementDetails:""} };
+const TOTAL = 3 + QUESTIONS.length + 3;
 function t(){ return T[state.lang]; }
 
 /* ============ LIPS BORDER SRC ============ */
@@ -688,7 +703,8 @@ function renderStep(){
   else if(state.step===1) renderHousing(body,nav);
   else if(state.step===2) renderContribution(body,nav);
   else if(state.step>=3 && state.step<3+QUESTIONS.length) renderQuiz(body,nav,state.step-3);
-  else if(state.step===3+QUESTIONS.length) renderReview(body,nav);
+  else if(state.step===3+QUESTIONS.length) renderInvolvement(body,nav);
+  else if(state.step===3+QUESTIONS.length+1) renderReview(body,nav);
   else renderSuccess(body,nav);
 }
 
@@ -769,6 +785,33 @@ function renderQuiz(body,nav,qi){
 }
 function selAns(qi,oi,f){ state.data.answers[qi]={oi,f}; renderStep(); }
 
+function renderInvolvement(body,nav){
+  const x=t();
+  body.innerHTML=`
+    <div class="q-progress">${x.involvementTitle}</div>
+    <div class="tier-options">
+      ${INVOLVEMENT_OPTIONS.map(o=>`
+        <div class="tier-option ${state.data.involvement.includes(o.id)?'selected':''}" onclick="toggleInvolvement('${o.id}')">
+          <div class="tk"></div>
+          <div class="t-name">${o[state.lang]}</div>
+        </div>`).join('')}
+    </div>
+    <div class="field" style="margin-top:26px;">
+      <label>${x.involvementDetailsLabel}</label>
+      <textarea id="f-involvement-details" rows="3">${state.data.involvementDetails}</textarea>
+    </div>`;
+  nav.innerHTML=`<button class="btn" onclick="goBack()">← ${x.back}</button><button class="btn primary" onclick="nextInvolvement()">${x.continue} →</button>`;
+}
+function toggleInvolvement(id){
+  const i=state.data.involvement.indexOf(id);
+  if(i===-1) state.data.involvement.push(id); else state.data.involvement.splice(i,1);
+  renderStep();
+}
+function nextInvolvement(){
+  state.data.involvementDetails=document.getElementById('f-involvement-details').value.trim();
+  state.step++; renderStep();
+}
+
 function renderReview(body,nav){
   const x=t(), s=computeScores(), top=topFaction(s), max=Math.max(1,...Object.values(s));
   const house=HOUSING.find(h=>h.id===state.data.housing);
@@ -778,6 +821,7 @@ function renderReview(body,nav){
     <div class="review-block"><div class="rl">Email</div><div class="rv">${state.data.email}${state.data.telegram?' · '+state.data.telegram:''}</div></div>
     <div class="review-block"><div class="rl">${x.housing}</div><div class="rv">${house?house[state.lang][0]:'—'}</div></div>
     <div class="review-block"><div class="rl">${x.contribution}</div><div class="rv">€${state.data.contribution}</div></div>
+    <div class="review-block"><div class="rl">${x.involvementTitle}</div><div class="rv">${state.data.involvement.length?state.data.involvement.map(id=>INVOLVEMENT_OPTIONS.find(o=>o.id===id)[state.lang]).join(', '):'—'}${state.data.involvementDetails?' — '+esc(state.data.involvementDetails):''}</div></div>
     <div class="review-block" style="border-bottom:none;">
       <div class="rl">${x.faction}</div>
       <div class="mini-compass">
@@ -801,7 +845,9 @@ async function submitReg(){
     name:state.data.name, email:state.data.email, telegram:state.data.telegram,
     phone:state.data.phone, arrival:state.data.arrival,
     housing:state.data.housing, housingLabel:house?house.de[0]:state.data.housing,
-    contribution:state.data.contribution, scores:s, topFaction:top, lang:state.lang
+    contribution:state.data.contribution, scores:s, topFaction:top, lang:state.lang,
+    contributions:state.data.involvement.map(id=>INVOLVEMENT_OPTIONS.find(o=>o.id===id).de).join(', '),
+    contributionDetails:state.data.involvementDetails
   };
 
   let json=null;
@@ -839,7 +885,6 @@ function renderSuccess(body,nav){
       <p style="font-family:'Oswald',sans-serif; letter-spacing:.08em; font-size:12px; margin-top:10px; color:#55514b;">${x.regId}: ${state.data.regId}</p>
       <div style="margin-top:22px;"><a class="btn primary" style="text-decoration:none; display:inline-block;" href="https://t.me/GoldmundKongressBot?start=${encodeURIComponent(state.data.regId)}" target="_blank" rel="noopener">${x.telegramBtn}</a></div>
       <p style="font-family:'Fraunces',serif; font-size:13px; color:#55514b; margin-top:10px;">${x.telegramNote}</p>
-      ${bankHtml}
     </div>`;
   }else{
     body.innerHTML=`<div class="success"><span class="diamond-fill"></span><h3>${x.errSubmitH}</h3><p>${x.errSubmitP}</p>${bankHtml}</div>`;
@@ -883,7 +928,7 @@ async function checkPass(){
   }catch(e){ alert('Could not reach the admin function.'); }
 }
 async function loadAdmin(){
-  const tb=document.querySelector('#admin-table tbody'); tb.innerHTML='<tr><td colspan="15" style="text-align:center;padding:30px;">Loading…</td></tr>';
+  const tb=document.querySelector('#admin-table tbody'); tb.innerHTML='<tr><td colspan="17" style="text-align:center;padding:30px;">Loading…</td></tr>';
   try{
     const res=await fetch(`/.netlify/functions/admin?passphrase=${encodeURIComponent(adminPass)}`);
     const json=await res.json();
@@ -900,7 +945,7 @@ function renderAdminStats(){
 }
 function renderAdminTable(){
   const th=document.querySelector('#admin-table thead'), tb=document.querySelector('#admin-table tbody'), es=document.getElementById('empty-state');
-  th.innerHTML=`<tr><th>Reg ID</th><th>Name</th><th>Email</th><th>Telegram</th><th>Housing</th><th>Contribution</th><th>Faction</th><th>M</th><th>S</th><th>R</th><th>T</th><th>K</th><th>Payment</th><th>Submitted</th><th>Action</th></tr>`;
+  th.innerHTML=`<tr><th>Reg ID</th><th>Name</th><th>Email</th><th>Telegram</th><th>Housing</th><th>Contribution</th><th>Faction</th><th>M</th><th>S</th><th>R</th><th>T</th><th>K</th><th>Payment</th><th>Submitted</th><th>Contributions</th><th>Details</th><th>Action</th></tr>`;
   if(!adminEntries.length){ tb.innerHTML=''; es.style.display='block'; return; }
   es.style.display='none';
   const sorted=[...adminEntries].sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
@@ -909,6 +954,7 @@ function renderAdminTable(){
     <td>€${e.contribution||0}</td><td><span class="fchip" style="background:${fac?fac.color:'#999'}">${fac?fac.en:'—'}</span></td>
     <td>${s.M||0}</td><td>${s.S||0}</td><td>${s.R||0}</td><td>${s.T||0}</td><td>${s.K||0}</td>
     <td>${esc(e.paymentStatus)}</td><td>${e.submittedAt?new Date(e.submittedAt).toLocaleString():'—'}</td>
+    <td>${esc(e.contributions)}</td><td>${esc(e.contributionDetails)}</td>
     <td>${e.telegramChatId?`<button class="btn" style="padding:5px 10px; font-size:10px;" onclick="remindUser('${e.regId}')">Remind</button>`:'—'}</td></tr>`;}).join('');
 }
 function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }

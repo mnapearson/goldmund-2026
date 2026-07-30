@@ -56,6 +56,8 @@ exports.handler = async (event) => {
       submittedAt,
       '', // Telegram Chat ID — filled in later by telegram-webhook.js on /start
       data.lang === 'en' ? 'en' : 'de',
+      data.contributions || '',
+      data.contributionDetails || '',
     ]);
 
     return { statusCode: 200, body: JSON.stringify({ ok: true, regId, bank }) };

@@ -1,3 +1,11 @@
+const FACTION_NAMES = {
+  M: { de: 'Mystiker', en: 'Mystics' },
+  S: { de: 'Surrealisten', en: 'Surrealists' },
+  R: { de: 'Romantiker', en: 'Romantics' },
+  T: { de: 'Techies', en: 'Technologists' },
+  K: { de: 'Kollektivisten', en: 'Collectivists' },
+};
+
 function esc(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -18,13 +26,15 @@ function bankBlock() {
 function buildConfirmationMessage(entry, lang) {
   const isDe = lang !== 'en';
   const bank = bankBlock();
+  const factionName = FACTION_NAMES[entry.topFaction] ? FACTION_NAMES[entry.topFaction][isDe ? 'de' : 'en'] : '—';
 
   if (isDe) {
     return (
       `<b>Willkommen beim Goldenen Kongress, ${esc(entry.name)}!</b>\n\n` +
       `🏕 <b>Unterkunft:</b> ${esc(entry.housing)}\n` +
       `💶 <b>Beitrag:</b> €${entry.contribution}\n\n` +
-      `Du wurdest einer geheimen Fraktion zugeteilt — welche das ist, erfährst du beim Kongress.\n\n` +
+      `<b>Tendenz zu:</b> ${esc(factionName)}\n` +
+      `<i>Hinweis: Die endgültige Fraktionszuteilung wird von den Organisator*innen kuratiert und kann im Sinne der Spieldramaturgie angepasst werden.</i>\n\n` +
       `<b>Bankdaten für deine Überweisung:</b>\n` +
       `Betrag: €${entry.contribution}\n` +
       `Bank: ${esc(bank.bank)}\n` +
@@ -34,7 +44,8 @@ function buildConfirmationMessage(entry, lang) {
       `Verwendungszweck: ${esc(PAYMENT_REF)}\n` +
       (bank.deadline ? `Zahlungsfrist: ${esc(bank.deadline)}\n` : '') +
       (bank.wero ? `\nAlternativ per Wero: Telefonnummer ${esc(bank.wero)}\n` : '') +
-      `\n⚠️ <i>Dein Platz ist erst bestätigt, wenn die Zahlung eingegangen ist.</i>\n\n` +
+      `\n⚠️ <i>Dein Platz ist erst bestätigt, wenn die Zahlung eingegangen ist.</i>\n` +
+      `Du erhältst nicht nochmal eine separate Anmeldebestätigung. Bitte überweise den Betrag am besten direkt. Nach dem 15.09. werden alle nicht überwiesenen Anmeldungen an Personen auf der Warteliste vergeben. Du siehst, dass Überweisung und Anmeldung erfolgreich waren, wenn du in die private Gäste-Telegram-Gruppe hinzugefügt wurdest.\n\n` +
       `Fragen? Antworte einfach auf diese Nachricht.`
     );
   }
@@ -42,7 +53,8 @@ function buildConfirmationMessage(entry, lang) {
     `<b>Welcome to the Golden Congress, ${esc(entry.name)}!</b>\n\n` +
     `🏕 <b>Housing:</b> ${esc(entry.housing)}\n` +
     `💶 <b>Contribution:</b> €${entry.contribution}\n\n` +
-    `You've been assigned to a secret faction — which one will be revealed at the congress.\n\n` +
+    `<b>Leaning toward:</b> ${esc(factionName)}\n` +
+    `<i>Note: Final faction placement is curated by the organizers and may be adjusted for game design purposes.</i>\n\n` +
     `<b>Bank details for your transfer:</b>\n` +
     `Amount: €${entry.contribution}\n` +
     `Bank: ${esc(bank.bank)}\n` +
@@ -52,7 +64,8 @@ function buildConfirmationMessage(entry, lang) {
     `Reference: ${esc(PAYMENT_REF)}\n` +
     (bank.deadline ? `Payment deadline: ${esc(bank.deadline)}\n` : '') +
     (bank.wero ? `\nAlternatively via Wero: Phone number ${esc(bank.wero)}\n` : '') +
-    `\n⚠️ <i>Your spot is only confirmed once payment has arrived.</i>\n\n` +
+    `\n⚠️ <i>Your spot is only confirmed once payment has arrived.</i>\n` +
+    `You won't receive a separate registration confirmation. Please transfer the amount as soon as possible. After September 15th, any unpaid registrations will be given to people on the waitlist. You'll know your transfer and registration were successful once you've been added to the private guest Telegram group.\n\n` +
     `Questions? Just reply to this message.`
   );
 }

@@ -3,6 +3,7 @@ const { getAllRows } = require('./lib/sheets');
 const HEADERS = [
   'Reg ID', 'Name', 'Email', 'Telegram', 'Phone', 'Arrival', 'Housing', 'Contribution (€)',
   'Top Faction', 'M', 'S', 'R', 'T', 'K', 'Payment Status', 'Submitted At', 'Telegram Chat ID', 'Language',
+  'Contributions', 'Contribution Details',
 ];
 
 function toCSV(rows) {
@@ -26,6 +27,8 @@ function toEntry(r) {
     submittedAt: r[15] || '',
     telegramChatId: r[16] || '',
     lang: r[17] || 'de',
+    contributions: r[18] || '',
+    contributionDetails: r[19] || '',
   };
 }
 
