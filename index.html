@@ -860,7 +860,7 @@ async function submitReg(){
   state.data.regError = json&&!json.ok ? (json.error||true) : null;
   state.data.bank = json ? json.bank : null;
 
-  state.step=3+QUESTIONS.length+1; renderStep();
+  state.step=3+QUESTIONS.length+2; renderStep();
 }
 
 function renderSuccess(body,nav){
