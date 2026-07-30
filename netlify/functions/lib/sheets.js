@@ -66,14 +66,42 @@ async function appendRow(row) {
   });
 }
 
-async function nextRegId() {
-  const rows = await getAllRows();
+// Pass already-fetched rows to avoid a redundant read when the caller
+// already has them (e.g. after checking for a duplicate registration).
+async function nextRegId(rows) {
+  const data = rows || (await getAllRows());
   let max = 0;
-  for (const r of rows) {
+  for (const r of data) {
     const m = /^GM-(\d+)$/.exec(r[0] || '');
     if (m) max = Math.max(max, parseInt(m[1], 10));
   }
   return `GM-${String(max + 1).padStart(3, '0')}`;
+}
+
+function normEmail(v) {
+  return (v || '').trim().toLowerCase();
+}
+function normPhone(v) {
+  const digits = (v || '').replace(/[^\d+]/g, '');
+  // "00" is the standard international-dialing equivalent of "+", so
+  // "0049..." and "+49..." refer to the same number.
+  return digits.startsWith('00') ? '+' + digits.slice(2) : digits;
+}
+
+// Finds an existing row whose email or phone matches, ignoring case and
+// formatting differences (spaces, dashes, parens). Phone only counts as
+// a match if both sides actually have one, so two blank phone fields
+// don't collide.
+function findDuplicate(rows, email, phone) {
+  const wantEmail = normEmail(email);
+  const wantPhone = normPhone(phone);
+  return rows.find((r) => {
+    const rowEmail = normEmail(r[2]);
+    const rowPhone = normPhone(r[4]);
+    if (wantEmail && rowEmail === wantEmail) return true;
+    if (wantPhone && rowPhone && rowPhone === wantPhone) return true;
+    return false;
+  });
 }
 
 // rowNumber is the 1-indexed sheet row (data starts at row 2)
@@ -94,4 +122,4 @@ async function updateCell(rowNumber, colLetter, value) {
   });
 }
 
-module.exports = { getAllRows, appendRow, nextRegId, findRowByRegId, updateCell, SHEET_NAME, HEADERS };
+module.exports = { getAllRows, appendRow, nextRegId, findRowByRegId, findDuplicate, updateCell, SHEET_NAME, HEADERS };

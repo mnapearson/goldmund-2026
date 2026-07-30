@@ -1,4 +1,4 @@
-const { appendRow, nextRegId } = require('./lib/sheets');
+const { appendRow, nextRegId, getAllRows, findDuplicate } = require('./lib/sheets');
 
 function bankBlock() {
   return {
@@ -33,7 +33,17 @@ exports.handler = async (event) => {
   const bank = bankBlock();
 
   try {
-    const regId = await nextRegId();
+    const rows = await getAllRows();
+
+    const dupe = findDuplicate(rows, email, data.phone);
+    if (dupe) {
+      return {
+        statusCode: 409,
+        body: JSON.stringify({ ok: false, code: 'duplicate', regId: dupe[0] || null, bank }),
+      };
+    }
+
+    const regId = await nextRegId(rows);
     const scores = data.scores || {};
     const submittedAt = new Date().toISOString();
 

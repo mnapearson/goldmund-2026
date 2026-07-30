@@ -614,7 +614,8 @@ const T = {
        involvementTitle:"Wie möchtest du dich einbringen?", involvementDetailsLabel:"Erzähl uns mehr — was bringst du mit?",
        bankTitle:"Bankdaten für deine Überweisung", bankAmount:"Betrag", bankBank:"Bank", bankIban:"IBAN", bankBic:"BIC", bankHolder:"Empfänger", bankRef:"Verwendungszweck", bankDeadline:"Zahlungsfrist", bankWero:"Alternativ per Wero: Telefonnummer",
        bankPendingNote:"Dein Platz ist erst bestätigt, wenn die Zahlung eingegangen ist.",
-       errSubmitH:"Fast geschafft.", errSubmitP:"Deine Anmeldung konnte nicht automatisch gespeichert werden. Bitte kontaktiere die Organisator*innen, damit sie dich manuell eintragen — du kannst aber schon jetzt mit den unten stehenden Bankdaten überweisen." },
+       errSubmitH:"Fast geschafft.", errSubmitP:"Deine Anmeldung konnte nicht automatisch gespeichert werden. Bitte kontaktiere die Organisator*innen, damit sie dich manuell eintragen — du kannst aber schon jetzt mit den unten stehenden Bankdaten überweisen.",
+       dupH:"Du bist schon dabei!", dupP:"Diese Email-Adresse oder Telefonnummer ist bereits registriert. Falls dir das komisch vorkommt oder du deine Angaben ändern möchtest, wende dich an die Organisator*innen." },
   en:{ step:["Who you are","Where you sleep","Your contribution"], continue:"Continue", back:"Back", submit:"Submit registration",
        name:"Full name", arrival:"Arrival day", contribTitle:"Your contribution",
        contribNote:"Pay on a sliding scale — whatever feels right for you. Accommodation is not included.",
@@ -628,7 +629,8 @@ const T = {
        involvementTitle:"How would you like to contribute?", involvementDetailsLabel:"Tell us more — what will you bring?",
        bankTitle:"Bank details for your transfer", bankAmount:"Amount", bankBank:"Bank", bankIban:"IBAN", bankBic:"BIC", bankHolder:"Recipient", bankRef:"Reference", bankDeadline:"Payment deadline", bankWero:"Alternatively via Wero: Phone number",
        bankPendingNote:"Your spot is only confirmed once payment has arrived.",
-       errSubmitH:"Almost there.", errSubmitP:"Your registration couldn't be saved automatically. Please contact the organizers so they can register you manually — you can already transfer using the bank details below." }
+       errSubmitH:"Almost there.", errSubmitP:"Your registration couldn't be saved automatically. Please contact the organizers so they can register you manually — you can already transfer using the bank details below.",
+       dupH:"You're already on the list!", dupP:"This email address or phone number is already registered. If that seems wrong, or you'd like to change your details, please contact the organizers." }
 };
 
 const HEADINGS = {
@@ -856,8 +858,9 @@ async function submitReg(){
     json=await res.json();
   }catch(e){ json=null; }
 
-  state.data.regId = json&&json.ok ? json.regId : null;
-  state.data.regError = json&&!json.ok ? (json.error||true) : null;
+  state.data.duplicate = !!(json && json.code==='duplicate');
+  state.data.regId = json && (json.ok || state.data.duplicate) ? json.regId : null;
+  state.data.regError = json&&!json.ok&&!state.data.duplicate ? (json.error||true) : null;
   state.data.bank = json ? json.bank : null;
 
   state.step=3+QUESTIONS.length+2; renderStep();
@@ -880,7 +883,13 @@ function renderSuccess(body,nav){
       <p style="font-family:'Fraunces',serif; font-size:12.5px; font-style:italic; color:#55514b; margin-top:10px;">${x.bankPendingNote}</p>
     </div>` : '';
 
-  if(state.data.regId){
+  if(state.data.duplicate&&state.data.regId){
+    body.innerHTML=`<div class="success"><span class="diamond-fill"></span><h3>${x.dupH}</h3><p>${x.dupP}</p>
+      <p style="font-family:'Oswald',sans-serif; letter-spacing:.08em; font-size:12px; margin-top:10px; color:#55514b;">${x.regId}: ${state.data.regId}</p>
+      <div style="margin-top:22px;"><a class="btn primary" style="text-decoration:none; display:inline-block;" href="https://t.me/GoldmundKongressBot?start=${encodeURIComponent(state.data.regId)}" target="_blank" rel="noopener">${x.telegramBtn}</a></div>
+      <p style="font-family:'Fraunces',serif; font-size:13px; color:#55514b; margin-top:10px;">${x.telegramNote}</p>
+    </div>`;
+  }else if(state.data.regId){
     body.innerHTML=`<div class="success"><span class="diamond-fill"></span><h3>${x.successH}</h3><p>${x.successP}</p><p style="font-style:italic; margin-top:16px;">${x.successS}</p>
       <p style="font-family:'Oswald',sans-serif; letter-spacing:.08em; font-size:12px; margin-top:10px; color:#55514b;">${x.regId}: ${state.data.regId}</p>
       <div style="margin-top:22px;"><a class="btn primary" style="text-decoration:none; display:inline-block;" href="https://t.me/GoldmundKongressBot?start=${encodeURIComponent(state.data.regId)}" target="_blank" rel="noopener">${x.telegramBtn}</a></div>
