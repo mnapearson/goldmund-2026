@@ -1,10 +1,4 @@
-const { getAllRows } = require('./lib/sheets');
-
-const HEADERS = [
-  'Reg ID', 'Name', 'Email', 'Telegram', 'Phone', 'Arrival', 'Housing', 'Contribution (€)',
-  'Top Faction', 'M', 'S', 'R', 'T', 'K', 'Payment Status', 'Submitted At', 'Telegram Chat ID', 'Language',
-  'Contributions', 'Contribution Details',
-];
+const { getAllRows, HEADERS } = require('./lib/sheets');
 
 function toCSV(rows) {
   const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
