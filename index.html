@@ -530,7 +530,7 @@ en:[
 ]};
 
 const HOUSING = [
-  {id:"hotel", de:["Hotel Maximilian","Doppelzimmer, Frühstück inklusive. Komfort, abseits vom Programm."], en:["Hotel Maximilian","Shared room, breakfast included. Comfort, away from the program."]},
+  {id:"hotel", de:["Hotel Maximilian","Verschiedene Zimmertypen (Einzel-, Doppel-, Dreibettzimmer und Suiten). Frühstück ist nicht inklusive, kann aber dazu gebucht werden. Komfort, abseits vom Programm."], en:["Hotel Maximilian","Various room types (single, double, triple rooms and suites). Breakfast is not included but can be booked additionally. Comfort, away from the program."]},
   {id:"library", de:["Zimmer in der Bibliothek","Vor Ort, wenige Plätze. Mittendrin — schlaflose Nächte garantiert."], en:["Library Room","On-site, few spots. In the thick of it — sleepless nights."]},
   {id:"indoor", de:["Indoor-Camping","Eigene Matratze vor Ort, falls Platz. Schlafsack mitbringen."], en:["Indoor Camping","Own mattress on-site, if space. Bring a sleeping bag."]},
   {id:"camper", de:["Camper / Auto an der Kirche","Selbstversorgt. Oktobernächte sind kalt — gut vorbereitet kommen."], en:["Camper / Car by the Church","Self-sufficient. October nights are cold — come prepared."]}
@@ -610,10 +610,11 @@ const T = {
        q:"Frage", housing:"Unterkunft", contribution:"Beitrag", faction:"Fraktion", selectDay:"Auswählen…",
        errName:"Bitte gib mindestens Name und E-Mail an.", errHouse:"Bitte wähle deine Unterkunft.",
        submitting:"Wird gesendet…", regId:"Anmeldenummer",
-       telegramBtn:"📬 Bestätigung auf Telegram erhalten", telegramNote:"Deine Zahlungsdetails erhältst du über unseren Telegram-Bot.",
+       telegramBtn:"📬 Bestätigung auf Telegram erhalten", telegramNote:"Du erhältst dort außerdem eine Bestätigung und weitere Infos.",
        involvementTitle:"Wie möchtest du dich einbringen?", involvementDetailsLabel:"Erzähl uns mehr — was bringst du mit?",
-       bankTitle:"Bankdaten für deine Überweisung", bankAmount:"Betrag", bankBank:"Bank", bankIban:"IBAN", bankBic:"BIC", bankHolder:"Empfänger", bankRef:"Verwendungszweck", bankDeadline:"Zahlungsfrist", bankWero:"Alternativ per Wero: Telefonnummer",
-       bankPendingNote:"Dein Platz ist erst bestätigt, wenn die Zahlung eingegangen ist.",
+       bankTitle:"Zahlungsdetails:", bankIban:"IBAN", bankBic:"BIC", bankRef:"Verwendungszweck",
+       bankRefValue:"„Nachname, Vorname + Kostenbeteiligung Goldmund\"",
+       bankCompleteNote:"Hinweis: Die Anmeldung ist erst mit Überweisung des Beitrags komplett!",
        errSubmitH:"Fast geschafft.", errSubmitP:"Deine Anmeldung konnte nicht automatisch gespeichert werden. Bitte kontaktiere die Organisator*innen, damit sie dich manuell eintragen — du kannst aber schon jetzt mit den unten stehenden Bankdaten überweisen.",
        dupH:"Du bist schon dabei!", dupP:"Diese Email-Adresse oder Telefonnummer ist bereits registriert. Falls dir das komisch vorkommt oder du deine Angaben ändern möchtest, wende dich an die Organisator*innen." },
   en:{ step:["Who you are","Where you sleep","Your contribution"], continue:"Continue", back:"Back", submit:"Submit registration",
@@ -625,10 +626,11 @@ const T = {
        q:"Question", housing:"Housing", contribution:"Contribution", faction:"Faction", selectDay:"Select…",
        errName:"Please enter at least your name and email.", errHouse:"Please choose your housing.",
        submitting:"Submitting…", regId:"Registration ID",
-       telegramBtn:"📬 Get confirmation on Telegram", telegramNote:"You'll receive your payment details via our Telegram bot.",
+       telegramBtn:"📬 Get confirmation on Telegram", telegramNote:"You'll also get a confirmation and further info there.",
        involvementTitle:"How would you like to contribute?", involvementDetailsLabel:"Tell us more — what will you bring?",
-       bankTitle:"Bank details for your transfer", bankAmount:"Amount", bankBank:"Bank", bankIban:"IBAN", bankBic:"BIC", bankHolder:"Recipient", bankRef:"Reference", bankDeadline:"Payment deadline", bankWero:"Alternatively via Wero: Phone number",
-       bankPendingNote:"Your spot is only confirmed once payment has arrived.",
+       bankTitle:"Payment details:", bankIban:"IBAN", bankBic:"BIC", bankRef:"Reference",
+       bankRefValue:"“Last name, first name + Goldmund contribution”",
+       bankCompleteNote:"Note: Registration is only complete once the contribution has been transferred!",
        errSubmitH:"Almost there.", errSubmitP:"Your registration couldn't be saved automatically. Please contact the organizers so they can register you manually — you can already transfer using the bank details below.",
        dupH:"You're already on the list!", dupP:"This email address or phone number is already registered. If that seems wrong, or you'd like to change your details, please contact the organizers." }
 };
@@ -872,15 +874,12 @@ function renderSuccess(body,nav){
   const bankHtml = bank ? `
     <div class="review-block" style="text-align:left; max-width:420px; margin:24px auto 0;">
       <div class="rl">${x.bankTitle}</div>
-      <div class="rv">${x.bankAmount}: €${state.data.contribution}</div>
-      <div class="rv">${x.bankBank}: ${esc(bank.bank)}</div>
+      <div class="rv">${esc(bank.holder)}</div>
       <div class="rv">${x.bankIban}: ${esc(bank.iban)}</div>
       <div class="rv">${x.bankBic}: ${esc(bank.bic)}</div>
-      <div class="rv">${x.bankHolder}: ${esc(bank.holder)}</div>
-      <div class="rv">${x.bankRef}: Nachname, Vorname + Kostenbeteiligung Goldmund 2026</div>
-      ${bank.deadline?`<div class="rv">${x.bankDeadline}: ${esc(bank.deadline)}</div>`:''}
-      ${bank.wero?`<div class="rv" style="margin-top:8px;">${x.bankWero} ${esc(bank.wero)}</div>`:''}
-      <p style="font-family:'Fraunces',serif; font-size:12.5px; font-style:italic; color:#55514b; margin-top:10px;">${x.bankPendingNote}</p>
+      <div class="rv">${esc(bank.bankAddress)}</div>
+      <div class="rv">${x.bankRef}: ${x.bankRefValue}</div>
+      <p style="font-family:'Fraunces',serif; font-size:12.5px; font-style:italic; color:#55514b; margin-top:10px;">${x.bankCompleteNote}</p>
     </div>` : '';
 
   if(state.data.duplicate&&state.data.regId){
@@ -888,12 +887,14 @@ function renderSuccess(body,nav){
       <p style="font-family:'Oswald',sans-serif; letter-spacing:.08em; font-size:12px; margin-top:10px; color:#55514b;">${x.regId}: ${state.data.regId}</p>
       <div style="margin-top:22px;"><a class="btn primary" style="text-decoration:none; display:inline-block;" href="https://t.me/GoldmundKongressBot?start=${encodeURIComponent(state.data.regId)}" target="_blank" rel="noopener">${x.telegramBtn}</a></div>
       <p style="font-family:'Fraunces',serif; font-size:13px; color:#55514b; margin-top:10px;">${x.telegramNote}</p>
+      ${bankHtml}
     </div>`;
   }else if(state.data.regId){
     body.innerHTML=`<div class="success"><span class="diamond-fill"></span><h3>${x.successH}</h3><p>${x.successP}</p><p style="font-style:italic; margin-top:16px;">${x.successS}</p>
       <p style="font-family:'Oswald',sans-serif; letter-spacing:.08em; font-size:12px; margin-top:10px; color:#55514b;">${x.regId}: ${state.data.regId}</p>
       <div style="margin-top:22px;"><a class="btn primary" style="text-decoration:none; display:inline-block;" href="https://t.me/GoldmundKongressBot?start=${encodeURIComponent(state.data.regId)}" target="_blank" rel="noopener">${x.telegramBtn}</a></div>
       <p style="font-family:'Fraunces',serif; font-size:13px; color:#55514b; margin-top:10px;">${x.telegramNote}</p>
+      ${bankHtml}
     </div>`;
   }else{
     body.innerHTML=`<div class="success"><span class="diamond-fill"></span><h3>${x.errSubmitH}</h3><p>${x.errSubmitP}</p>${bankHtml}</div>`;

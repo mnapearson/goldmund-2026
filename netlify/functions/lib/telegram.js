@@ -20,6 +20,7 @@ function bankBlock() {
     holder: process.env.PAYMENT_HOLDER || '',
     deadline: process.env.PAYMENT_DEADLINE || '',
     wero: process.env.PAYMENT_WERO_PHONE || '',
+    bankAddress: process.env.PAYMENT_BANK_ADDRESS || '',
   };
 }
 
@@ -40,6 +41,7 @@ function buildConfirmationMessage(entry, lang) {
       `Bank: ${esc(bank.bank)}\n` +
       `IBAN: ${esc(bank.iban)}\n` +
       `BIC: ${esc(bank.bic)}\n` +
+      `${esc(bank.bankAddress)}\n` +
       `Empfänger: ${esc(bank.holder)}\n` +
       `Verwendungszweck: ${esc(PAYMENT_REF)}\n` +
       (bank.deadline ? `Zahlungsfrist: ${esc(bank.deadline)}\n` : '') +
@@ -60,6 +62,7 @@ function buildConfirmationMessage(entry, lang) {
     `Bank: ${esc(bank.bank)}\n` +
     `IBAN: ${esc(bank.iban)}\n` +
     `BIC: ${esc(bank.bic)}\n` +
+    `${esc(bank.bankAddress)}\n` +
     `Recipient: ${esc(bank.holder)}\n` +
     `Reference: ${esc(PAYMENT_REF)}\n` +
     (bank.deadline ? `Payment deadline: ${esc(bank.deadline)}\n` : '') +
@@ -81,6 +84,7 @@ function buildReminderMessage(entry, lang) {
       `Bank: ${esc(bank.bank)}\n` +
       `IBAN: ${esc(bank.iban)}\n` +
       `BIC: ${esc(bank.bic)}\n` +
+      `${esc(bank.bankAddress)}\n` +
       `Empfänger: ${esc(bank.holder)}\n` +
       `Verwendungszweck: ${esc(PAYMENT_REF)}\n` +
       (bank.deadline ? `Zahlungsfrist: ${esc(bank.deadline)}\n` : '') +
@@ -95,6 +99,7 @@ function buildReminderMessage(entry, lang) {
     `Bank: ${esc(bank.bank)}\n` +
     `IBAN: ${esc(bank.iban)}\n` +
     `BIC: ${esc(bank.bic)}\n` +
+    `${esc(bank.bankAddress)}\n` +
     `Recipient: ${esc(bank.holder)}\n` +
     `Reference: ${esc(PAYMENT_REF)}\n` +
     (bank.deadline ? `Payment deadline: ${esc(bank.deadline)}\n` : '') +

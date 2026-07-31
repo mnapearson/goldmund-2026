@@ -8,6 +8,7 @@ function bankBlock() {
     holder: process.env.PAYMENT_HOLDER || '',
     deadline: process.env.PAYMENT_DEADLINE || '',
     wero: process.env.PAYMENT_WERO_PHONE || '',
+    bankAddress: process.env.PAYMENT_BANK_ADDRESS || '',
   };
 }
 
