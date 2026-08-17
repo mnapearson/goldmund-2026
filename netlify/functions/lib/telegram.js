@@ -134,17 +134,42 @@ function buildInviteMessage(groupLink, lang) {
   );
 }
 
-async function sendMessage(chatId, html) {
+async function callTelegramApi(method, params) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) throw new Error('Missing TELEGRAM_BOT_TOKEN');
-  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+  const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text: html, parse_mode: 'HTML' }),
+    body: JSON.stringify(params),
   });
   const json = await res.json();
-  if (!json.ok) throw new Error(`Telegram API error: ${json.description || 'unknown'}`);
+  if (!json.ok) throw new Error(`Telegram API error (${method}): ${json.description || 'unknown'}`);
   return json;
 }
 
-module.exports = { buildConfirmationMessage, buildReminderMessage, buildInviteMessage, sendMessage };
+// extra can carry things like { message_thread_id } to target a forum topic.
+async function sendMessage(chatId, html, extra) {
+  return callTelegramApi('sendMessage', Object.assign({ chat_id: chatId, text: html, parse_mode: 'HTML' }, extra));
+}
+
+async function deleteMessage(chatId, messageId) {
+  return callTelegramApi('deleteMessage', { chat_id: chatId, message_id: messageId });
+}
+
+async function pinChatMessage(chatId, messageId) {
+  return callTelegramApi('pinChatMessage', { chat_id: chatId, message_id: messageId });
+}
+
+async function createForumTopic(chatId, name) {
+  return callTelegramApi('createForumTopic', { chat_id: chatId, name });
+}
+
+module.exports = {
+  buildConfirmationMessage,
+  buildReminderMessage,
+  buildInviteMessage,
+  sendMessage,
+  deleteMessage,
+  pinChatMessage,
+  createForumTopic,
+};
