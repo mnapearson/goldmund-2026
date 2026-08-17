@@ -12,6 +12,17 @@ function esc(s) {
 
 const PAYMENT_REF = 'Nachname, Vorname + Kostenbeteiligung Goldmund 2026';
 
+// Only a single "name" field is collected at registration, so this is a
+// heuristic: everything but the last word is the given name(s), the last
+// word is the surname. Works for the vast majority of names in the sheet;
+// not reliable for multi-word surnames or non-Western name order.
+function splitName(fullName) {
+  const parts = (fullName || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { firstName: '', lastName: '' };
+  if (parts.length === 1) return { firstName: parts[0], lastName: '' };
+  return { firstName: parts.slice(0, -1).join(' '), lastName: parts[parts.length - 1] };
+}
+
 function bankBlock() {
   return {
     bank: process.env.PAYMENT_BANK || '',
@@ -76,44 +87,65 @@ function buildConfirmationMessage(entry, lang) {
 function buildReminderMessage(entry, lang) {
   const isDe = lang !== 'en';
   const bank = bankBlock();
+  const { firstName, lastName } = splitName(entry.name);
+  const nameRef = lastName ? `${lastName}, ${firstName}` : firstName;
+
   if (isDe) {
     return (
-      `<b>Zahlungserinnerung — Goldener Kongress</b>\n\n` +
-      `Hallo ${esc(entry.name)}, deine Zahlung für den Goldenen Kongress steht noch aus. Hier nochmal die Bankdaten:\n\n` +
-      `Betrag: €${entry.contribution}\n` +
-      `Bank: ${esc(bank.bank)}\n` +
+      `Goldmund,\n\n` +
+      `du hast dich für den Goldenen Kongress angemeldet — wir freuen uns auf dich. Deine Überweisung steht noch aus.\n\n` +
+      `Bitte überweise deinen Beitrag von ${entry.contribution}€ so bald wie möglich:\n\n` +
+      `Empfänger: ${esc(bank.holder)}\n` +
       `IBAN: ${esc(bank.iban)}\n` +
       `BIC: ${esc(bank.bic)}\n` +
       `${esc(bank.bankAddress)}\n` +
-      `Empfänger: ${esc(bank.holder)}\n` +
-      `Verwendungszweck: ${esc(PAYMENT_REF)}\n` +
-      (bank.deadline ? `Zahlungsfrist: ${esc(bank.deadline)}\n` : '') +
-      (bank.wero ? `\nAlternativ per Wero: Telefonnummer ${esc(bank.wero)}\n` : '') +
-      `\n⚠️ <i>Dein Platz ist erst bestätigt, wenn die Zahlung eingegangen ist.</i>`
+      `Verwendungszweck: „${esc(nameRef)} + Kostenbeteiligung Goldmund 2026"\n\n` +
+      (bank.wero ? `Alternativ per Wero: ${esc(bank.wero)}\n\n` : '') +
+      `Dein Platz ist erst mit Eingang der Zahlung bestätigt. Nach dem 15. September werden nicht überwiesene Anmeldungen an Personen auf der Warteliste vergeben.\n\n` +
+      `— Der Goldene Kongress`
     );
   }
   return (
-    `<b>Payment reminder — Golden Congress</b>\n\n` +
-    `Hi ${esc(entry.name)}, your payment for the Golden Congress is still outstanding. Here are the bank details again:\n\n` +
-    `Amount: €${entry.contribution}\n` +
-    `Bank: ${esc(bank.bank)}\n` +
+    `Goldmund,\n\n` +
+    `you registered for the Golden Congress — we're looking forward to having you. Your payment is still outstanding.\n\n` +
+    `Please transfer your contribution of €${entry.contribution} as soon as possible:\n\n` +
+    `Recipient: ${esc(bank.holder)}\n` +
     `IBAN: ${esc(bank.iban)}\n` +
     `BIC: ${esc(bank.bic)}\n` +
     `${esc(bank.bankAddress)}\n` +
-    `Recipient: ${esc(bank.holder)}\n` +
-    `Reference: ${esc(PAYMENT_REF)}\n` +
-    (bank.deadline ? `Payment deadline: ${esc(bank.deadline)}\n` : '') +
-    (bank.wero ? `\nAlternatively via Wero: Phone number ${esc(bank.wero)}\n` : '') +
-    `\n⚠️ <i>Your spot is only confirmed once payment has arrived.</i>`
+    `Reference: "${esc(nameRef)} + Kostenbeteiligung Goldmund 2026"\n\n` +
+    (bank.wero ? `Alternative via Wero: ${esc(bank.wero)}\n\n` : '') +
+    `Your spot is only confirmed once payment is received. After September 15, unpaid registrations will be offered to the waiting list.\n\n` +
+    `— The Golden Congress`
   );
 }
 
-function buildInviteMessage(groupLink, lang) {
+function buildInviteMessage(entry, groupLink, lang) {
   const isDe = lang !== 'en';
+  const contribLine = entry.contributions
+    ? (isDe
+        ? `\n\nDu hast angeboten mitzuwirken — wir melden uns dazu bald.`
+        : `\n\nYou offered to contribute — we'll be in touch about that soon.`)
+    : '';
+
   if (isDe) {
-    return `🎉 Deine Zahlung ist eingegangen — dein Platz beim Goldenen Kongress ist bestätigt!\n\nTritt jetzt der offiziellen Gäste-Gruppe bei:\n${esc(groupLink)}\n\nWir freuen uns auf dich in Zeitz!`;
+    return (
+      `Goldmund,\n\n` +
+      `deine Überweisung ist eingegangen. Dein Platz beim Goldenen Kongress ist gesichert.\n\n` +
+      `Tritt jetzt der Gäste-Gruppe bei — hier wird in den kommenden Wochen alles Weitere verkündet:\n${esc(groupLink)}\n\n` +
+      `Die Mauern von Zeitz warten darauf, zum Klingen gebracht zu werden. Wir sehen uns im Oktober.\n\n` +
+      `— Der Goldene Kongress\n1.–4. Oktober 2026 · Zeitz` +
+      contribLine
+    );
   }
-  return `🎉 Your payment has been received — your spot at the Golden Congress is confirmed!\n\nJoin the official guest group:\n${esc(groupLink)}\n\nSee you in Zeitz!`;
+  return (
+    `Goldmund,\n\n` +
+    `your transfer has been received. Your place at the Golden Congress is secured.\n\n` +
+    `Join the guest group — all further details will be shared here in the coming weeks:\n${esc(groupLink)}\n\n` +
+    `The walls of Zeitz are waiting to be made to sing. See you in October.\n\n` +
+    `— The Golden Congress\nOctober 1–4, 2026 · Zeitz` +
+    contribLine
+  );
 }
 
 async function sendMessage(chatId, html) {

@@ -39,7 +39,8 @@ exports.handler = async (event) => {
     }
 
     const lang = row[17] || 'de';
-    const text = buildInviteMessage(data.groupLink, lang);
+    const entry = { contributions: row[18] || '' };
+    const text = buildInviteMessage(entry, data.groupLink, lang);
     await sendMessage(chatId, text);
 
     return { statusCode: 200, body: JSON.stringify({ success: true }) };
