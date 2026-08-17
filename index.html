@@ -321,6 +321,7 @@
   th{background:var(--ink); color:var(--bone); text-transform:uppercase; font-family:'Oswald',sans-serif; font-size:10.5px; letter-spacing:.08em; position:sticky; top:0;}
   tr:hover td{background:rgba(169,133,47,.1);}
   .fchip{display:inline-block; padding:2px 9px; font-family:'Oswald',sans-serif; font-size:11px; font-weight:600; color:var(--bone); letter-spacing:.05em;}
+  .read-more-btn{cursor:pointer; text-decoration:underline; font-size:11px; color:var(--red); white-space:nowrap; margin-left:4px;}
   .gate{max-width:340px; margin:120px auto; text-align:center;}
   .gate input{width:100%; padding:12px; border:1.5px solid var(--ink); margin:16px 0; font-size:15px; font-family:'Fraunces',serif;}
   .empty-state{text-align:center; padding:60px 20px; color:#55514b; font-family:'Fraunces',serif;}
@@ -932,6 +933,7 @@ let adminPass='';
 let adminEntries=[];
 let groupLink='';
 let sentActions=new Set();
+let expandedDetails=new Set();
 function isPaidStatus(s){ return (s||'').trim().toLowerCase()==='bezahlt'; }
 function openAdmin(){ document.getElementById('admin-screen').classList.add('open'); }
 function closeAdmin(){ document.getElementById('admin-screen').classList.remove('open'); document.getElementById('admin-gate').style.display='block'; document.getElementById('admin-dashboard').style.display='none'; document.getElementById('admin-pass').value=''; }
@@ -978,6 +980,20 @@ function renderActionCell(e){
   const handler=isPaid?`sendInvite('${e.regId}')`:`remindUser('${e.regId}')`;
   return `<button class="btn" style="padding:5px 10px; font-size:10px;" onclick="${handler}">${label}</button>`;
 }
+function toggleDetailsExpand(key){
+  if(expandedDetails.has(key)) expandedDetails.delete(key); else expandedDetails.add(key);
+  renderAdminTable();
+}
+function renderTruncatedCell(e,field,maxLen){
+  const text=e[field]||'';
+  if(text.length<=maxLen) return esc(text);
+  const key=`${field}:${e.regId}`;
+  if(expandedDetails.has(key)){
+    return `${esc(text)} <span class="read-more-btn" onclick="toggleDetailsExpand('${key}')">Show less</span>`;
+  }
+  const shortText=text.slice(0,maxLen).trim()+'…';
+  return `${esc(shortText)} <span class="read-more-btn" onclick="toggleDetailsExpand('${key}')">Read more</span>`;
+}
 function renderAdminTable(){
   const th=document.querySelector('#admin-table thead'), tb=document.querySelector('#admin-table tbody'), es=document.getElementById('empty-state');
   th.innerHTML=`<tr><th>Reg ID</th><th>Name</th><th>Email</th><th>Telegram</th><th>Housing</th><th>Contribution</th><th>Faction</th><th>M</th><th>S</th><th>R</th><th>T</th><th>K</th><th>Payment</th><th>Submitted</th><th>Contributions</th><th>Details</th><th>Action</th></tr>`;
@@ -993,7 +1009,8 @@ function renderAdminTable(){
     <td>${s.M||0}</td><td>${s.S||0}</td><td>${s.R||0}</td><td>${s.T||0}</td><td>${s.K||0}</td>
     <td><span class="fchip" style="background:${isPaid?'var(--brass)':'#999'}; cursor:pointer;" title="Klicken zum Umschalten" onclick="togglePayment(this,'${e.regId}','${e.paymentStatus}')">${esc(e.paymentStatus)}</span></td>
     <td>${e.submittedAt?new Date(e.submittedAt).toLocaleString():'—'}</td>
-    <td>${esc(e.contributions)}</td><td>${esc(e.contributionDetails)}</td>
+    <td style="white-space:normal; max-width:220px;">${renderTruncatedCell(e,'contributions',50)}</td>
+    <td style="white-space:normal; max-width:280px;">${renderTruncatedCell(e,'contributionDetails',60)}</td>
     <td>${renderActionCell(e)}</td></tr>`;}).join('');
 }
 function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
