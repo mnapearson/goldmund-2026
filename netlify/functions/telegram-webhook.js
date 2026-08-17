@@ -1,5 +1,5 @@
 const { findRowByRegId, updateCell } = require('./lib/sheets');
-const { buildConfirmationMessage, sendMessage, deleteMessage, pinChatMessage, createForumTopic } = require('./lib/telegram');
+const { buildConfirmationMessage, sendMessage, deleteMessage, pinChatMessage, createForumTopic, getChatMember } = require('./lib/telegram');
 
 function rowToEntry(row) {
   return {
@@ -38,11 +38,31 @@ const SETUP_TOPICS = [
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Accepts the hardcoded ADMIN_TELEGRAM_ID as a fast path, but that alone
+// missed real organizers -- Telegram distinguishes the group's "creator"
+// (owner) from promoted "administrator" accounts, and a single fixed ID
+// can't represent either of those roles for everyone who should be able
+// to run /setup. Falls back to asking Telegram directly whether the
+// sender is the group's creator or an administrator.
+async function isAuthorizedSender(chatId, fromId) {
+  if (!fromId) return false;
+  if (String(fromId) === String(process.env.ADMIN_TELEGRAM_ID)) return true;
+  try {
+    const res = await getChatMember(chatId, fromId);
+    const status = res.result && res.result.status;
+    return status === 'creator' || status === 'administrator';
+  } catch (e) {
+    console.error('setup: could not check chat member status', e);
+    return false;
+  }
+}
+
 async function handleSetup(message) {
   const chatId = message.chat.id;
   const fromId = message.from && message.from.id;
 
-  if (String(fromId) !== String(process.env.ADMIN_TELEGRAM_ID)) {
+  const authorized = await isAuthorizedSender(chatId, fromId);
+  if (!authorized) {
     try {
       await sendMessage(chatId, 'Nur für Organisator*innen.');
     } catch (e) {

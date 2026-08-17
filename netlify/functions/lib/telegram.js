@@ -164,6 +164,10 @@ async function createForumTopic(chatId, name) {
   return callTelegramApi('createForumTopic', { chat_id: chatId, name });
 }
 
+async function getChatMember(chatId, userId) {
+  return callTelegramApi('getChatMember', { chat_id: chatId, user_id: userId });
+}
+
 module.exports = {
   buildConfirmationMessage,
   buildReminderMessage,
@@ -172,4 +176,5 @@ module.exports = {
   deleteMessage,
   pinChatMessage,
   createForumTopic,
+  getChatMember,
 };
