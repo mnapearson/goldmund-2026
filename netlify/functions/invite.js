@@ -28,8 +28,8 @@ exports.handler = async (event) => {
     }
 
     const row = found.row;
-    const paymentStatus = row[14] || 'Ausstehend';
-    if (paymentStatus !== 'Bezahlt') {
+    const paymentStatus = (row[14] || '').trim().toLowerCase();
+    if (paymentStatus !== 'bezahlt') {
       return { statusCode: 409, body: JSON.stringify({ error: 'not_paid' }) };
     }
 

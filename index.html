@@ -932,6 +932,7 @@ let adminPass='';
 let adminEntries=[];
 let groupLink='';
 let sentActions=new Set();
+function isPaidStatus(s){ return (s||'').trim().toLowerCase()==='bezahlt'; }
 function openAdmin(){ document.getElementById('admin-screen').classList.add('open'); }
 function closeAdmin(){ document.getElementById('admin-screen').classList.remove('open'); document.getElementById('admin-gate').style.display='block'; document.getElementById('admin-dashboard').style.display='none'; document.getElementById('admin-pass').value=''; }
 async function checkPass(){
@@ -957,7 +958,7 @@ async function loadAdmin(){
 }
 function renderAdminStats(){
   const w=document.getElementById('admin-stats'); const total=adminEntries.length; const sum=adminEntries.reduce((a,e)=>a+(e.contribution||0),0);
-  const paid=adminEntries.filter(e=>e.paymentStatus==='Bezahlt').length;
+  const paid=adminEntries.filter(e=>isPaidStatus(e.paymentStatus)).length;
   const fc={M:0,S:0,R:0,T:0,K:0}; adminEntries.forEach(e=>{if(e.topFaction)fc[e.topFaction]++;});
   w.innerHTML=`<div class="stat-card"><div class="num">${total}</div><div class="lab">Registrations</div></div>
     <div class="stat-card"><div class="num">€${sum}</div><div class="lab">Pledged</div></div>
@@ -965,7 +966,7 @@ function renderAdminStats(){
     ${Object.keys(FACTIONS).map(f=>`<div class="stat-card"><div class="num">${fc[f]}</div><div class="lab">${FACTIONS[f].en}</div></div>`).join('')}`;
 }
 function renderActionCell(e){
-  const isPaid=e.paymentStatus==='Bezahlt';
+  const isPaid=isPaidStatus(e.paymentStatus);
   const action=isPaid?'invite':'remind';
   const label=isPaid?'Send Invite':'Remind';
   if(sentActions.has(`${action}:${e.regId}`)){
@@ -983,7 +984,7 @@ function renderAdminTable(){
   if(!adminEntries.length){ tb.innerHTML=''; es.style.display='block'; return; }
   es.style.display='none';
   const sorted=[...adminEntries].sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
-  tb.innerHTML=sorted.map(e=>{ const s=e.scores||{}; const fac=e.topFaction&&FACTIONS[e.topFaction]; const isPaid=e.paymentStatus==='Bezahlt';
+  tb.innerHTML=sorted.map(e=>{ const s=e.scores||{}; const fac=e.topFaction&&FACTIONS[e.topFaction]; const isPaid=isPaidStatus(e.paymentStatus);
     const rowStyle=isPaid?' style="background:rgba(169,133,47,.08);"':'';
     const firstCellStyle=isPaid?' style="border-left:3px solid var(--brass);"':'';
     return `<tr${rowStyle}>
@@ -997,7 +998,7 @@ function renderAdminTable(){
 }
 function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
 async function togglePayment(el,regId,currentStatus){
-  const newStatus=currentStatus==='Bezahlt'?'Ausstehend':'Bezahlt';
+  const newStatus=isPaidStatus(currentStatus)?'Ausstehend':'Bezahlt';
   const prevText=el.textContent, prevBg=el.style.background;
   el.textContent='…'; el.style.pointerEvents='none';
   try{
@@ -1038,7 +1039,7 @@ async function sendInvite(regId){
   }catch(e){ alert('Could not reach the invite function.'); }
 }
 async function bulkRemind(){
-  const targets=adminEntries.filter(e=>e.paymentStatus!=='Bezahlt'&&e.telegramChatId&&!sentActions.has(`remind:${e.regId}`));
+  const targets=adminEntries.filter(e=>!isPaidStatus(e.paymentStatus)&&e.telegramChatId&&!sentActions.has(`remind:${e.regId}`));
   if(!targets.length){ alert('No unpaid registrations with a Telegram contact to remind.'); return; }
   if(!confirm(`Send payment reminder to ${targets.length} people?`)) return;
   const prog=document.getElementById('bulk-progress');
@@ -1059,7 +1060,7 @@ async function bulkRemind(){
 }
 async function bulkInvite(){
   if(!groupLink){ alert('Paste the Telegram group link first.'); return; }
-  const targets=adminEntries.filter(e=>e.paymentStatus==='Bezahlt'&&e.telegramChatId&&!sentActions.has(`invite:${e.regId}`));
+  const targets=adminEntries.filter(e=>isPaidStatus(e.paymentStatus)&&e.telegramChatId&&!sentActions.has(`invite:${e.regId}`));
   if(!targets.length){ alert('No paid registrations with a Telegram contact left to invite.'); return; }
   if(!confirm(`Send group invite to ${targets.length} people?`)) return;
   const prog=document.getElementById('bulk-progress');
