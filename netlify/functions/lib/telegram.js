@@ -10,18 +10,11 @@ function esc(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// Kept as an instruction ("write your own first and last name here"),
+// not filled in from the registration's single "name" field -- a bank
+// transfer reference needs the full legal name the payer's own bank
+// account shows, which a same-field name-split can't reliably guarantee.
 const PAYMENT_REF = 'Nachname, Vorname + Kostenbeteiligung Goldmund 2026';
-
-// Only a single "name" field is collected at registration, so this is a
-// heuristic: everything but the last word is the given name(s), the last
-// word is the surname. Works for the vast majority of names in the sheet;
-// not reliable for multi-word surnames or non-Western name order.
-function splitName(fullName) {
-  const parts = (fullName || '').trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return { firstName: '', lastName: '' };
-  if (parts.length === 1) return { firstName: parts[0], lastName: '' };
-  return { firstName: parts.slice(0, -1).join(' '), lastName: parts[parts.length - 1] };
-}
 
 function bankBlock() {
   return {
@@ -87,8 +80,6 @@ function buildConfirmationMessage(entry, lang) {
 function buildReminderMessage(entry, lang) {
   const isDe = lang !== 'en';
   const bank = bankBlock();
-  const { firstName, lastName } = splitName(entry.name);
-  const nameRef = lastName ? `${lastName}, ${firstName}` : firstName;
 
   if (isDe) {
     return (
@@ -99,7 +90,7 @@ function buildReminderMessage(entry, lang) {
       `IBAN: ${esc(bank.iban)}\n` +
       `BIC: ${esc(bank.bic)}\n` +
       `${esc(bank.bankAddress)}\n` +
-      `Verwendungszweck: „${esc(nameRef)} + Kostenbeteiligung Goldmund 2026"\n\n` +
+      `Verwendungszweck: „${esc(PAYMENT_REF)}"\n\n` +
       (bank.wero ? `Alternativ per Wero: ${esc(bank.wero)}\n\n` : '') +
       `Dein Platz ist erst mit Eingang der Zahlung bestätigt. Nach dem 15. September werden nicht überwiesene Anmeldungen an Personen auf der Warteliste vergeben.\n\n` +
       `— Der Goldene Kongress`
@@ -113,38 +104,33 @@ function buildReminderMessage(entry, lang) {
     `IBAN: ${esc(bank.iban)}\n` +
     `BIC: ${esc(bank.bic)}\n` +
     `${esc(bank.bankAddress)}\n` +
-    `Reference: "${esc(nameRef)} + Kostenbeteiligung Goldmund 2026"\n\n` +
+    `Reference: "${esc(PAYMENT_REF)}"\n\n` +
     (bank.wero ? `Alternative via Wero: ${esc(bank.wero)}\n\n` : '') +
     `Your spot is only confirmed once payment is received. After September 15, unpaid registrations will be offered to the waiting list.\n\n` +
     `— The Golden Congress`
   );
 }
 
-function buildInviteMessage(entry, groupLink, lang) {
+function buildInviteMessage(groupLink, lang) {
   const isDe = lang !== 'en';
-  const contribLine = entry.contributions
-    ? (isDe
-        ? `\n\nDu hast angeboten mitzuwirken — wir melden uns dazu bald.`
-        : `\n\nYou offered to contribute — we'll be in touch about that soon.`)
-    : '';
 
   if (isDe) {
     return (
       `Goldmund,\n\n` +
       `deine Überweisung ist eingegangen. Dein Platz beim Goldenen Kongress ist gesichert.\n\n` +
       `Tritt jetzt der Gäste-Gruppe bei — hier wird in den kommenden Wochen alles Weitere verkündet:\n${esc(groupLink)}\n\n` +
-      `Die Mauern von Zeitz warten darauf, zum Klingen gebracht zu werden. Wir sehen uns im Oktober.\n\n` +
-      `— Der Goldene Kongress\n1.–4. Oktober 2026 · Zeitz` +
-      contribLine
+      `Die Mauern von Zeitz warten darauf, zum Klingen gebracht zu werden.\n\n` +
+      `Du hast angeboten mitzuwirken — wir melden uns dazu bald.\n\n` +
+      `— Der Goldene Kongress\n1.–4. Oktober 2026 · Zeitz`
     );
   }
   return (
     `Goldmund,\n\n` +
     `your transfer has been received. Your place at the Golden Congress is secured.\n\n` +
     `Join the guest group — all further details will be shared here in the coming weeks:\n${esc(groupLink)}\n\n` +
-    `The walls of Zeitz are waiting to be made to sing. See you in October.\n\n` +
-    `— The Golden Congress\nOctober 1–4, 2026 · Zeitz` +
-    contribLine
+    `The walls of Zeitz are waiting to be made to sing.\n\n` +
+    `You offered to contribute — we'll be in touch about that soon.\n\n` +
+    `— The Golden Congress\nOctober 1–4, 2026 · Zeitz`
   );
 }
 
