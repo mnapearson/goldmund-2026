@@ -482,6 +482,8 @@
         <span id="bulk-progress" style="font-family:'Oswald',sans-serif; font-size:11px; color:#55514b;"></span>
         <button class="btn" onclick="bulkRemind()">Bulk Remind All Unpaid</button>
         <button class="btn" onclick="bulkInvite()">Bulk Invite All Paid</button>
+        <button class="btn" onclick="copyEmailsPaidNoChat()">Copy Emails: Paid, No Chat ID</button>
+        <button class="btn" onclick="copyEmailsUnpaid()">Copy Emails: Unpaid</button>
         <button class="btn" onclick="exportCSV()">Export CSV</button>
         <button class="btn" onclick="closeAdmin()">Close</button>
       </div>
@@ -1095,6 +1097,23 @@ async function bulkInvite(){
   prog.textContent=`Done: ${done-failed}/${targets.length} sent${failed?`, ${failed} failed`:''}.`;
   renderAdminTable();
   setTimeout(()=>{ prog.textContent=''; },6000);
+}
+async function copyEmails(filterFn,label){
+  const emails=adminEntries.filter(filterFn).map(e=>e.email).filter(Boolean);
+  if(!emails.length){ alert(`No matching registrations with an email address (${label}).`); return; }
+  const text=emails.join(', ');
+  try{
+    await navigator.clipboard.writeText(text);
+    alert(`Copied ${emails.length} email${emails.length===1?'':'s'} to clipboard (${label}).`);
+  }catch(e){
+    alert(`Could not copy automatically — here are the emails (${label}), copy manually:\n\n${text}`);
+  }
+}
+function copyEmailsPaidNoChat(){
+  copyEmails(e=>isPaidStatus(e.paymentStatus)&&!e.telegramChatId, 'Paid, no Chat ID');
+}
+function copyEmailsUnpaid(){
+  copyEmails(e=>!isPaidStatus(e.paymentStatus), 'Unpaid');
 }
 function exportCSV(){
   window.open(`/.netlify/functions/admin?passphrase=${encodeURIComponent(adminPass)}&action=export`, '_blank');
