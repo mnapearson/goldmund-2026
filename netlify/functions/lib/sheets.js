@@ -54,14 +54,22 @@ async function ensureHeaders() {
   });
 }
 
-async function appendRow(row) {
+// Writes a row at an exact, explicitly-computed row number instead of
+// using values.append's own "find the table and insert" heuristic.
+// That heuristic determines both the target row AND which column to
+// start writing at by scanning the sheet, and a single stray value
+// sitting in the wrong column of an otherwise-empty row is enough to
+// throw it off — every subsequent append can silently land 6+ columns
+// to the right of where it should, with the real Reg ID column left
+// blank. Writing to a precise A{row}:T{row} range removes that
+// ambiguity entirely: there is no table to detect, just a fixed
+// address for the write to land on.
+async function writeRowAt(rowNumber, row) {
   const sheets = await getSheets();
-  await ensureHeaders();
-  await sheets.spreadsheets.values.append({
+  await sheets.spreadsheets.values.update({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A:T`,
+    range: `${SHEET_NAME}!A${rowNumber}:T${rowNumber}`,
     valueInputOption: 'USER_ENTERED',
-    insertDataOption: 'INSERT_ROWS',
     requestBody: { values: [row] },
   });
 }
@@ -122,4 +130,4 @@ async function updateCell(rowNumber, colLetter, value) {
   });
 }
 
-module.exports = { getAllRows, appendRow, nextRegId, findRowByRegId, findDuplicate, updateCell, SHEET_NAME, HEADERS };
+module.exports = { getAllRows, writeRowAt, ensureHeaders, nextRegId, findRowByRegId, findDuplicate, updateCell, SHEET_NAME, HEADERS };

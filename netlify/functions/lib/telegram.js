@@ -108,6 +108,14 @@ function buildReminderMessage(entry, lang) {
   );
 }
 
+function buildInviteMessage(groupLink, lang) {
+  const isDe = lang !== 'en';
+  if (isDe) {
+    return `🎉 Deine Zahlung ist eingegangen — dein Platz beim Goldenen Kongress ist bestätigt!\n\nTritt jetzt der offiziellen Gäste-Gruppe bei:\n${esc(groupLink)}\n\nWir freuen uns auf dich in Zeitz!`;
+  }
+  return `🎉 Your payment has been received — your spot at the Golden Congress is confirmed!\n\nJoin the official guest group:\n${esc(groupLink)}\n\nSee you in Zeitz!`;
+}
+
 async function sendMessage(chatId, html) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) throw new Error('Missing TELEGRAM_BOT_TOKEN');
@@ -121,4 +129,4 @@ async function sendMessage(chatId, html) {
   return json;
 }
 
-module.exports = { buildConfirmationMessage, buildReminderMessage, sendMessage };
+module.exports = { buildConfirmationMessage, buildReminderMessage, buildInviteMessage, sendMessage };

@@ -471,9 +471,16 @@
     <p style="font-family:'Fraunces',serif; font-size:13px; color:#55514b; margin-top:14px;"><span style="text-decoration:underline; cursor:pointer;" onclick="closeAdmin()">back to site</span></p>
   </div>
   <div id="admin-dashboard" style="display:none;">
+    <div class="field" style="max-width:1100px; margin:0 auto 20px;">
+      <label>Telegram Group Link</label>
+      <input type="text" id="group-link-input" placeholder="Paste t.me/+... invite link" oninput="groupLink=this.value.trim()">
+    </div>
     <div class="admin-bar">
       <h2>Registrations</h2>
-      <div style="display:flex; gap:10px;">
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <span id="bulk-progress" style="font-family:'Oswald',sans-serif; font-size:11px; color:#55514b;"></span>
+        <button class="btn" onclick="bulkRemind()">Bulk Remind All Unpaid</button>
+        <button class="btn" onclick="bulkInvite()">Bulk Invite All Paid</button>
         <button class="btn" onclick="exportCSV()">Export CSV</button>
         <button class="btn" onclick="closeAdmin()">Close</button>
       </div>
@@ -923,6 +930,8 @@ observeReveals();
 /* ============ ADMIN ============ */
 let adminPass='';
 let adminEntries=[];
+let groupLink='';
+let sentActions=new Set();
 function openAdmin(){ document.getElementById('admin-screen').classList.add('open'); }
 function closeAdmin(){ document.getElementById('admin-screen').classList.remove('open'); document.getElementById('admin-gate').style.display='block'; document.getElementById('admin-dashboard').style.display='none'; document.getElementById('admin-pass').value=''; }
 async function checkPass(){
@@ -948,10 +957,25 @@ async function loadAdmin(){
 }
 function renderAdminStats(){
   const w=document.getElementById('admin-stats'); const total=adminEntries.length; const sum=adminEntries.reduce((a,e)=>a+(e.contribution||0),0);
+  const paid=adminEntries.filter(e=>e.paymentStatus==='Bezahlt').length;
   const fc={M:0,S:0,R:0,T:0,K:0}; adminEntries.forEach(e=>{if(e.topFaction)fc[e.topFaction]++;});
   w.innerHTML=`<div class="stat-card"><div class="num">${total}</div><div class="lab">Registrations</div></div>
     <div class="stat-card"><div class="num">€${sum}</div><div class="lab">Pledged</div></div>
+    <div class="stat-card"><div class="num">${paid}/${total}</div><div class="lab">Paid</div></div>
     ${Object.keys(FACTIONS).map(f=>`<div class="stat-card"><div class="num">${fc[f]}</div><div class="lab">${FACTIONS[f].en}</div></div>`).join('')}`;
+}
+function renderActionCell(e){
+  const isPaid=e.paymentStatus==='Bezahlt';
+  const action=isPaid?'invite':'remind';
+  const label=isPaid?'Send Invite':'Remind';
+  if(sentActions.has(`${action}:${e.regId}`)){
+    return `<button class="btn" disabled style="padding:5px 10px; font-size:10px; opacity:.5;">Sent ✓</button>`;
+  }
+  if(!e.telegramChatId){
+    return `<button class="btn" disabled title="Kein Telegram-Kontakt" style="padding:5px 10px; font-size:10px;">${label}</button>`;
+  }
+  const handler=isPaid?`sendInvite('${e.regId}')`:`remindUser('${e.regId}')`;
+  return `<button class="btn" style="padding:5px 10px; font-size:10px;" onclick="${handler}">${label}</button>`;
 }
 function renderAdminTable(){
   const th=document.querySelector('#admin-table thead'), tb=document.querySelector('#admin-table tbody'), es=document.getElementById('empty-state');
@@ -959,22 +983,100 @@ function renderAdminTable(){
   if(!adminEntries.length){ tb.innerHTML=''; es.style.display='block'; return; }
   es.style.display='none';
   const sorted=[...adminEntries].sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
-  tb.innerHTML=sorted.map(e=>{ const s=e.scores||{}; const fac=e.topFaction&&FACTIONS[e.topFaction]; return `<tr>
-    <td>${esc(e.regId)}</td><td>${esc(e.name)}</td><td>${esc(e.email)}</td><td>${esc(e.telegram)}</td><td>${esc(e.housing)}</td>
+  tb.innerHTML=sorted.map(e=>{ const s=e.scores||{}; const fac=e.topFaction&&FACTIONS[e.topFaction]; const isPaid=e.paymentStatus==='Bezahlt';
+    const rowStyle=isPaid?' style="background:rgba(169,133,47,.08);"':'';
+    const firstCellStyle=isPaid?' style="border-left:3px solid var(--brass);"':'';
+    return `<tr${rowStyle}>
+    <td${firstCellStyle}>${esc(e.regId)}</td><td>${esc(e.name)}</td><td>${esc(e.email)}</td><td>${esc(e.telegram)}</td><td>${esc(e.housing)}</td>
     <td>€${e.contribution||0}</td><td><span class="fchip" style="background:${fac?fac.color:'#999'}">${fac?fac.en:'—'}</span></td>
     <td>${s.M||0}</td><td>${s.S||0}</td><td>${s.R||0}</td><td>${s.T||0}</td><td>${s.K||0}</td>
-    <td>${esc(e.paymentStatus)}</td><td>${e.submittedAt?new Date(e.submittedAt).toLocaleString():'—'}</td>
+    <td><span class="fchip" style="background:${isPaid?'var(--brass)':'#999'}; cursor:pointer;" title="Klicken zum Umschalten" onclick="togglePayment(this,'${e.regId}','${e.paymentStatus}')">${esc(e.paymentStatus)}</span></td>
+    <td>${e.submittedAt?new Date(e.submittedAt).toLocaleString():'—'}</td>
     <td>${esc(e.contributions)}</td><td>${esc(e.contributionDetails)}</td>
-    <td>${e.telegramChatId?`<button class="btn" style="padding:5px 10px; font-size:10px;" onclick="remindUser('${e.regId}')">Remind</button>`:'—'}</td></tr>`;}).join('');
+    <td>${renderActionCell(e)}</td></tr>`;}).join('');
 }
 function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+async function togglePayment(el,regId,currentStatus){
+  const newStatus=currentStatus==='Bezahlt'?'Ausstehend':'Bezahlt';
+  const prevText=el.textContent, prevBg=el.style.background;
+  el.textContent='…'; el.style.pointerEvents='none';
+  try{
+    const res=await fetch('/.netlify/functions/update-status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId,status:newStatus,passphrase:adminPass})});
+    const json=await res.json();
+    if(!res.ok||!json.success) throw new Error(json.error||'failed');
+    const entry=adminEntries.find(e=>e.regId===regId);
+    if(entry) entry.paymentStatus=newStatus;
+    renderAdminTable(); renderAdminStats();
+  }catch(err){
+    el.textContent=prevText; el.style.background=prevBg; el.style.pointerEvents='';
+    el.title='Fehler: '+(err.message||'unbekannt'); el.style.outline='1px solid var(--red)';
+    setTimeout(()=>{ el.style.outline=''; },2500);
+  }
+}
 async function remindUser(regId){
   if(!confirm(`Send a payment reminder to ${regId} via Telegram?`)) return;
   try{
     const res=await fetch('/.netlify/functions/remind',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId,passphrase:adminPass})});
     const json=await res.json();
-    if(json.ok) alert('Reminder sent.'); else alert(json.error||'Could not send reminder.');
+    if(json.ok){ sentActions.add(`remind:${regId}`); renderAdminTable(); }
+    else alert(json.error||'Could not send reminder.');
   }catch(e){ alert('Could not reach the remind function.'); }
+}
+function inviteErrorMessage(code){
+  if(code==='not_paid') return 'This registration is not marked as paid.';
+  if(code==='no_chat_id') return 'This person has not started the Telegram bot yet.';
+  return code||'Could not send invite.';
+}
+async function sendInvite(regId){
+  if(!groupLink){ alert('Paste the Telegram group link first.'); return; }
+  if(!confirm(`Send group invite to ${regId} via Telegram?`)) return;
+  try{
+    const res=await fetch('/.netlify/functions/invite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId,groupLink,passphrase:adminPass})});
+    const json=await res.json();
+    if(json.success){ sentActions.add(`invite:${regId}`); renderAdminTable(); }
+    else alert(inviteErrorMessage(json.error));
+  }catch(e){ alert('Could not reach the invite function.'); }
+}
+async function bulkRemind(){
+  const targets=adminEntries.filter(e=>e.paymentStatus!=='Bezahlt'&&e.telegramChatId&&!sentActions.has(`remind:${e.regId}`));
+  if(!targets.length){ alert('No unpaid registrations with a Telegram contact to remind.'); return; }
+  if(!confirm(`Send payment reminder to ${targets.length} people?`)) return;
+  const prog=document.getElementById('bulk-progress');
+  let done=0, failed=0;
+  for(const e of targets){
+    prog.textContent=`Sending reminders… ${done+1}/${targets.length}`;
+    try{
+      const res=await fetch('/.netlify/functions/remind',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId:e.regId,passphrase:adminPass})});
+      const json=await res.json();
+      if(json.ok) sentActions.add(`remind:${e.regId}`); else failed++;
+    }catch(err){ failed++; }
+    done++;
+    await new Promise(r=>setTimeout(r,200));
+  }
+  prog.textContent=`Done: ${done-failed}/${targets.length} sent${failed?`, ${failed} failed`:''}.`;
+  renderAdminTable();
+  setTimeout(()=>{ prog.textContent=''; },6000);
+}
+async function bulkInvite(){
+  if(!groupLink){ alert('Paste the Telegram group link first.'); return; }
+  const targets=adminEntries.filter(e=>e.paymentStatus==='Bezahlt'&&e.telegramChatId&&!sentActions.has(`invite:${e.regId}`));
+  if(!targets.length){ alert('No paid registrations with a Telegram contact left to invite.'); return; }
+  if(!confirm(`Send group invite to ${targets.length} people?`)) return;
+  const prog=document.getElementById('bulk-progress');
+  let done=0, failed=0;
+  for(const e of targets){
+    prog.textContent=`Sending invites… ${done+1}/${targets.length}`;
+    try{
+      const res=await fetch('/.netlify/functions/invite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId:e.regId,groupLink,passphrase:adminPass})});
+      const json=await res.json();
+      if(json.success) sentActions.add(`invite:${e.regId}`); else failed++;
+    }catch(err){ failed++; }
+    done++;
+    await new Promise(r=>setTimeout(r,200));
+  }
+  prog.textContent=`Done: ${done-failed}/${targets.length} sent${failed?`, ${failed} failed`:''}.`;
+  renderAdminTable();
+  setTimeout(()=>{ prog.textContent=''; },6000);
 }
 function exportCSV(){
   window.open(`/.netlify/functions/admin?passphrase=${encodeURIComponent(adminPass)}&action=export`, '_blank');

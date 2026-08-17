@@ -1,4 +1,4 @@
-const { appendRow, nextRegId, getAllRows, findDuplicate } = require('./lib/sheets');
+const { writeRowAt, ensureHeaders, nextRegId, getAllRows, findDuplicate } = require('./lib/sheets');
 
 function bankBlock() {
   return {
@@ -10,6 +10,34 @@ function bankBlock() {
     wero: process.env.PAYMENT_WERO_PHONE || '',
     bankAddress: process.env.PAYMENT_BANK_ADDRESS || '',
   };
+}
+
+// Writes a new registration row, guarding against two failure modes that
+// can happen when requests land close together: (a) two submissions
+// computing the same "next" Reg ID, and (b) a third submission grabbing
+// the same target row between our read and our write. After writing, we
+// re-read the sheet and confirm our Reg ID appears exactly once, at the
+// row we wrote it to. If not, something raced us — recompute against the
+// fresh state and rewrite, up to 3 times.
+async function writeRegistrationRow(buildRow, initialRows) {
+  let rows = initialRows;
+  let regId = await nextRegId(rows);
+  let rowNumber = rows.length + 2; // header is row 1, data starts row 2
+  let row = buildRow(regId);
+  await writeRowAt(rowNumber, row);
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const freshRows = await getAllRows();
+    const idCount = freshRows.filter((r) => r[0] === regId).length;
+    const landedCorrectly = freshRows[rowNumber - 2] && freshRows[rowNumber - 2][0] === regId;
+    if (idCount <= 1 && landedCorrectly) return regId;
+
+    regId = await nextRegId(freshRows);
+    rowNumber = freshRows.length + 2;
+    row[0] = regId;
+    await writeRowAt(rowNumber, row);
+  }
+  return regId;
 }
 
 exports.handler = async (event) => {
@@ -34,6 +62,7 @@ exports.handler = async (event) => {
   const bank = bankBlock();
 
   try {
+    await ensureHeaders();
     const rows = await getAllRows();
 
     const dupe = findDuplicate(rows, email, data.phone);
@@ -44,32 +73,34 @@ exports.handler = async (event) => {
       };
     }
 
-    const regId = await nextRegId(rows);
     const scores = data.scores || {};
     const submittedAt = new Date().toISOString();
 
-    await appendRow([
-      regId,
-      name,
-      email,
-      data.telegram || '',
-      data.phone || '',
-      data.arrival || '',
-      data.housingLabel || housing,
-      contribution,
-      data.topFaction || '',
-      scores.M || 0,
-      scores.S || 0,
-      scores.R || 0,
-      scores.T || 0,
-      scores.K || 0,
-      'Ausstehend',
-      submittedAt,
-      '', // Telegram Chat ID — filled in later by telegram-webhook.js on /start
-      data.lang === 'en' ? 'en' : 'de',
-      data.contributions || '',
-      data.contributionDetails || '',
-    ]);
+    const regId = await writeRegistrationRow(
+      (id) => [
+        id,
+        name,
+        email,
+        data.telegram || '',
+        data.phone || '',
+        data.arrival || '',
+        data.housingLabel || housing,
+        contribution,
+        data.topFaction || '',
+        scores.M || 0,
+        scores.S || 0,
+        scores.R || 0,
+        scores.T || 0,
+        scores.K || 0,
+        'Ausstehend',
+        submittedAt,
+        '', // Telegram Chat ID — filled in later by telegram-webhook.js on /start
+        data.lang === 'en' ? 'en' : 'de',
+        data.contributions || '',
+        data.contributionDetails || '',
+      ],
+      rows
+    );
 
     return { statusCode: 200, body: JSON.stringify({ ok: true, regId, bank }) };
   } catch (err) {
