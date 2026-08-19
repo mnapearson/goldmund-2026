@@ -1,5 +1,5 @@
 const { findRowByRegId, updateCell } = require('./lib/sheets');
-const { buildConfirmationMessage, sendMessage, deleteMessage, pinChatMessage, createForumTopic, getChatMember } = require('./lib/telegram');
+const { buildConfirmationMessage, sendMessage, deleteMessage, pinChatMessage, createForumTopic, getChatMember, esc } = require('./lib/telegram');
 
 function rowToEntry(row) {
   return {
@@ -108,7 +108,7 @@ async function handleSetup(message) {
           try {
             await sendMessage(
               chatId,
-              'Konnte keine Themen-Kanäle erstellen. Bitte prüfen: Ist "Themen" (Forum-Modus) in den Gruppeneinstellungen aktiviert, und hat der Bot als Admin die Berechtigung "Themen verwalten"?'
+              `Konnte keine Themen-Kanäle erstellen (${esc(err.message)}). Bitte prüfen: Ist "Themen" (Forum-Modus) in den Gruppeneinstellungen aktiviert, und hat der Bot als Admin die Berechtigung "Themen verwalten"?`
             );
           } catch (e) {
             console.error('setup: could not send topic-failure notice', e);

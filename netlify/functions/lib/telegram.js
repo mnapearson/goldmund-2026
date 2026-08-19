@@ -177,4 +177,5 @@ module.exports = {
   pinChatMessage,
   createForumTopic,
   getChatMember,
+  esc,
 };
