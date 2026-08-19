@@ -483,7 +483,9 @@
         <button class="btn" onclick="bulkRemind()">Bulk Remind All Unpaid</button>
         <button class="btn" onclick="bulkInvite()">Bulk Invite All Paid</button>
         <button class="btn" onclick="copyEmailsPaidNoChat()">Copy Emails: Paid, No Chat ID</button>
-        <button class="btn" onclick="copyEmailsUnpaid()">Copy Emails: Unpaid</button>
+        <button class="btn" onclick="copyEmailsUnpaid()">Copy Unpaid Emails</button>
+        <button class="btn primary" id="sync-btn" onclick="syncSheet()">Sync Sheet</button>
+        <span id="sync-status" style="font-family:'Oswald',sans-serif; font-size:11px; color:#55514b;"></span>
         <button class="btn" onclick="exportCSV()">Export CSV</button>
         <button class="btn" onclick="closeAdmin()">Close</button>
       </div>
@@ -953,12 +955,16 @@ async function checkPass(){
 }
 async function loadAdmin(){
   const tb=document.querySelector('#admin-table tbody'); tb.innerHTML='<tr><td colspan="17" style="text-align:center;padding:30px;">Loading…</td></tr>';
+  let ok=false;
   try{
     const res=await fetch(`/.netlify/functions/admin?passphrase=${encodeURIComponent(adminPass)}`);
     const json=await res.json();
-    adminEntries=(json&&json.ok)?json.entries:[];
-  }catch(e){ adminEntries=[]; }
+    if(!res.ok||!json||!json.ok) throw new Error((json&&json.error)||'Could not load registrations.');
+    adminEntries=json.entries;
+    ok=true;
+  }catch(e){ /* keep showing last-known-good adminEntries rather than blanking the table */ }
   renderAdminTable(); renderAdminStats();
+  return ok;
 }
 function renderAdminStats(){
   const w=document.getElementById('admin-stats'); const total=adminEntries.length; const sum=adminEntries.reduce((a,e)=>a+(e.contribution||0),0);
@@ -1098,13 +1104,26 @@ async function bulkInvite(){
   renderAdminTable();
   setTimeout(()=>{ prog.textContent=''; },6000);
 }
+function showToast(message){
+  let toast=document.getElementById('admin-toast');
+  if(!toast){
+    toast=document.createElement('div');
+    toast.id='admin-toast';
+    toast.style.cssText="position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--ink); color:var(--bone); padding:12px 22px; font-family:'Oswald',sans-serif; font-size:12px; letter-spacing:.05em; text-transform:uppercase; z-index:300; box-shadow:0 4px 16px rgba(0,0,0,.3); opacity:0; transition:opacity .25s; pointer-events:none;";
+    document.body.appendChild(toast);
+  }
+  toast.textContent=message;
+  requestAnimationFrame(()=>{ toast.style.opacity='1'; });
+  clearTimeout(toast._hideTimer);
+  toast._hideTimer=setTimeout(()=>{ toast.style.opacity='0'; },3000);
+}
 async function copyEmails(filterFn,label){
   const emails=adminEntries.filter(filterFn).map(e=>e.email).filter(Boolean);
   if(!emails.length){ alert(`No matching registrations with an email address (${label}).`); return; }
   const text=emails.join(', ');
   try{
     await navigator.clipboard.writeText(text);
-    alert(`Copied ${emails.length} email${emails.length===1?'':'s'} to clipboard (${label}).`);
+    showToast(`${emails.length} email${emails.length===1?'':'s'} copied to clipboard`);
   }catch(e){
     alert(`Could not copy automatically — here are the emails (${label}), copy manually:\n\n${text}`);
   }
@@ -1113,7 +1132,18 @@ function copyEmailsPaidNoChat(){
   copyEmails(e=>isPaidStatus(e.paymentStatus)&&!e.telegramChatId, 'Paid, no Chat ID');
 }
 function copyEmailsUnpaid(){
-  copyEmails(e=>!isPaidStatus(e.paymentStatus), 'Unpaid');
+  copyEmails(e=>!isPaidStatus(e.paymentStatus)&&!e.telegramChatId, 'Unpaid, no Chat ID');
+}
+async function syncSheet(){
+  const btn=document.getElementById('sync-btn'), status=document.getElementById('sync-status');
+  if(btn) btn.disabled=true;
+  if(status) status.textContent='Syncing…';
+  const ok=await loadAdmin();
+  if(btn) btn.disabled=false;
+  if(status){
+    const timeStr=new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    status.textContent=ok?`Synced ✓ · Last synced: ${timeStr}`:'Sync failed — showing last known data.';
+  }
 }
 function exportCSV(){
   window.open(`/.netlify/functions/admin?passphrase=${encodeURIComponent(adminPass)}&action=export`, '_blank');
