@@ -1,5 +1,10 @@
 const { writeRowAt, ensureHeaders, nextRegId, getAllRows, findDuplicate } = require('./lib/sheets');
 
+// Fixed hotel cost (3 nights at €35), separate from the sliding-scale
+// contribution. Derived here from the housing value instead of trusting
+// a client-sent number, since it's meant to be fixed, not adjustable.
+const HOTEL_COST = 105;
+
 function bankBlock() {
   return {
     bank: process.env.PAYMENT_BANK || '',
@@ -75,6 +80,7 @@ exports.handler = async (event) => {
 
     const scores = data.scores || {};
     const submittedAt = new Date().toISOString();
+    const hotelCost = housing === 'hotel' ? HOTEL_COST : '';
 
     const regId = await writeRegistrationRow(
       (id) => [
@@ -98,11 +104,12 @@ exports.handler = async (event) => {
         data.lang === 'en' ? 'en' : 'de',
         data.contributions || '',
         data.contributionDetails || '',
+        hotelCost,
       ],
       rows
     );
 
-    return { statusCode: 200, body: JSON.stringify({ ok: true, regId, bank }) };
+    return { statusCode: 200, body: JSON.stringify({ ok: true, regId, bank, hotelCost }) };
   } catch (err) {
     console.error('register error', err);
     return {

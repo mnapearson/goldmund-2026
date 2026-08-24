@@ -1,12 +1,12 @@
 const { google } = require('googleapis');
 
 const SHEET_NAME = 'Registrations';
-const DATA_RANGE = `${SHEET_NAME}!A2:T`;
-const HEADER_RANGE = `${SHEET_NAME}!A1:T1`;
+const DATA_RANGE = `${SHEET_NAME}!A2:U`;
+const HEADER_RANGE = `${SHEET_NAME}!A1:U1`;
 const HEADERS = [
   'Reg ID', 'Name', 'Email', 'Telegram', 'Phone', 'Arrival', 'Housing', 'Contribution (€)',
   'Top Faction', 'M', 'S', 'R', 'T', 'K', 'Payment Status', 'Submitted At', 'Telegram Chat ID', 'Language',
-  'Contributions', 'Contribution Details',
+  'Contributions', 'Contribution Details', 'Hotel Cost (€)',
 ];
 
 let sheetsClient = null;
@@ -68,7 +68,7 @@ async function writeRowAt(rowNumber, row) {
   const sheets = await getSheets();
   await sheets.spreadsheets.values.update({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A${rowNumber}:T${rowNumber}`,
+    range: `${SHEET_NAME}!A${rowNumber}:U${rowNumber}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });

@@ -23,6 +23,7 @@ function toEntry(r) {
     lang: r[17] || 'de',
     contributions: r[18] || '',
     contributionDetails: r[19] || '',
+    hotelCost: r[20] || '',
   };
 }
 

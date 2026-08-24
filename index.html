@@ -541,12 +541,14 @@ en:[
   {label:"The Rules", body:"We commit to the <strong>principles of Burning Man</strong>. Above all, this means radical self-organization. Goldmund is a spectacle without spectators — everyone is equally organizer and participant. No one receives money or fame for their contributions. We do it out of connection, adventure, and joy. Goldmund is a curated space for experimentation where we play with reality."}
 ]};
 
+// Library, indoor camping, and camper spots are fully booked. New
+// registrations go to the hotel only; this does not affect the housing
+// already on file for people who registered before this change -- their
+// sheet rows keep whatever string they were written with.
 const HOUSING = [
-  {id:"hotel", de:["Hotel Maximilian","Verschiedene Zimmertypen (Einzel-, Doppel-, Dreibettzimmer und Suiten). Frühstück ist nicht inklusive, kann aber dazu gebucht werden. Komfort, abseits vom Programm."], en:["Hotel Maximilian","Various room types (single, double, triple rooms and suites). Breakfast is not included but can be booked additionally. Comfort, away from the program."]},
-  {id:"library", de:["Zimmer in der Bibliothek","Vor Ort, wenige Plätze. Mittendrin — schlaflose Nächte garantiert."], en:["Library Room","On-site, few spots. In the thick of it — sleepless nights."]},
-  {id:"indoor", de:["Indoor-Camping","Eigene Matratze vor Ort, falls Platz. Schlafsack mitbringen."], en:["Indoor Camping","Own mattress on-site, if space. Bring a sleeping bag."]},
-  {id:"camper", de:["Camper / Auto an der Kirche","Selbstversorgt. Oktobernächte sind kalt — gut vorbereitet kommen."], en:["Camper / Car by the Church","Self-sufficient. October nights are cold — come prepared."]}
+  {id:"hotel", de:["Hotel Maximilian","Verschiedene Zimmertypen (Einzel-, Doppel-, Dreibettzimmer und Suiten). Frühstück ist nicht inklusive, kann aber dazu gebucht werden. Komfort, abseits vom Programm."], en:["Hotel Maximilian","Various room types (single, double, triple rooms and suites). Breakfast is not included but can be booked additionally. Comfort, away from the program."]}
 ];
+const HOTEL_COST = 105; // €35/night x 3 nights, fixed -- separate from the sliding-scale contribution
 
 const INVOLVEMENT_OPTIONS = [
   {id:"workshop", de:"Workshop geben", en:"Give a workshop"},
@@ -619,11 +621,13 @@ const T = {
        contribFine:"Die Zahlung erfolgt separat per Überweisung — die Bankdaten erhältst du direkt im Anschluss an deine Anmeldung.",
        review:"Überprüfen", leaning:"Tendenz zu", placement:"Die finale Fraktionszuteilung erfolgt durch die Organisator:innen.",
        successH:"Du bist auf der Liste.", successP:"Willkommen, zukünftige*r Goldmund. Deine Fraktion bleibt geheim, bis wir uns beim Kongress sehen.", successS:"Wir sehen uns in Zeitz.",
-       q:"Frage", housing:"Unterkunft", contribution:"Beitrag", faction:"Fraktion", selectDay:"Auswählen…",
-       errName:"Bitte gib mindestens Name und E-Mail an.", errHouse:"Bitte wähle deine Unterkunft.",
+       q:"Frage", housing:"Unterkunft", contribution:"Kostenbeteiligung", faction:"Fraktion", selectDay:"Auswählen…",
+       errName:"Bitte gib mindestens Name und E-Mail an.",
        submitting:"Wird gesendet…", regId:"Anmeldenummer",
        telegramBtn:"📬 Bestätigung auf Telegram erhalten", telegramNote:"Du erhältst dort außerdem eine Bestätigung und weitere Infos.",
        involvementTitle:"Wie möchtest du dich einbringen?", involvementDetailsLabel:"Erzähl uns mehr — was bringst du mit?",
+       housingConfirmText:"Die Bibliothek und das Indoor-Camping sind bereits ausgebucht. Dein Platz ist im Hotel Maximilian.",
+       hotelCostLine:"Hotel Maximilian: €105 (3 Nächte à 35€)", hotelLabel:"Hotel", totalLabel:"Gesamt", totalDueLabel:"Gesamtbetrag",
        bankTitle:"Zahlungsdetails:", bankIban:"IBAN", bankBic:"BIC", bankRef:"Verwendungszweck",
        bankRefValue:"„Nachname, Vorname + Kostenbeteiligung Goldmund 2026\"",
        bankCompleteNote:"Hinweis: Die Anmeldung ist erst mit Überweisung des Beitrags komplett!",
@@ -636,10 +640,12 @@ const T = {
        review:"Review", leaning:"Leaning toward", placement:"Final faction placement is curated by the organizers.",
        successH:"You're on the list.", successP:"Welcome, future Goldmund. Your faction stays secret until we see you at the congress.", successS:"See you in Zeitz.",
        q:"Question", housing:"Housing", contribution:"Contribution", faction:"Faction", selectDay:"Select…",
-       errName:"Please enter at least your name and email.", errHouse:"Please choose your housing.",
+       errName:"Please enter at least your name and email.",
        submitting:"Submitting…", regId:"Registration ID",
        telegramBtn:"📬 Get confirmation on Telegram", telegramNote:"You'll also get a confirmation and further info there.",
        involvementTitle:"How would you like to contribute?", involvementDetailsLabel:"Tell us more — what will you bring?",
+       housingConfirmText:"The library and indoor camping are fully booked. Your spot is at Hotel Maximilian.",
+       hotelCostLine:"Hotel Maximilian: €105 (3 nights at €35)", hotelLabel:"Hotel", totalLabel:"Total", totalDueLabel:"Total amount due",
        bankTitle:"Payment details:", bankIban:"IBAN", bankBic:"BIC", bankRef:"Reference",
        bankRefValue:"“Last name, first name + Goldmund 2026 contribution”",
        bankCompleteNote:"Note: Registration is only complete once the contribution has been transferred!",
@@ -663,7 +669,7 @@ en:`<p>The Golden Congress is more than a weekend — it is an immersive role-pl
 <p>To find out which faction you'll be assigned to, complete the questionnaire during registration. <strong>We won't reveal which factions exist or how many</strong> — that's part of the game.</p>`
 };
 
-let state = { lang:'de', step:0, data:{name:"",email:"",telegram:"",phone:"",arrival:"",housing:"",contribution:150,answers:{},involvement:[],involvementDetails:""} };
+let state = { lang:'de', step:0, data:{name:"",email:"",telegram:"",phone:"",arrival:"",housing:"hotel",contribution:150,answers:{},involvement:[],involvementDetails:""} };
 const TOTAL = 3 + QUESTIONS.length + 3;
 function t(){ return T[state.lang]; }
 
@@ -759,19 +765,23 @@ function nextPersonal(){
 
 function renderHousing(body,nav){
   const x=t();
+  const house=HOUSING[0];
+  const rangeLow=150+HOTEL_COST, rangeHigh=200+HOTEL_COST;
   body.innerHTML=`
     <div class="q-progress">${state.lang==='de'?'Schritt':'Step'} 2 — ${x.step[1]}</div>
-    <div class="tier-options">
-      ${HOUSING.map(tier=>`
-        <div class="tier-option ${state.data.housing===tier.id?'selected':''}" onclick="selHousing('${tier.id}')">
-          <div class="tk"></div>
-          <div><div class="t-name">${tier[state.lang][0]}</div><div class="t-desc">${tier[state.lang][1]}</div></div>
-        </div>`).join('')}
+    <div class="review-block" style="text-align:left; max-width:420px; margin:0 auto;">
+      <div class="rl">${x.housing}</div>
+      <div class="rv">${house[state.lang][0]}</div>
+      <div class="rv" style="margin-top:4px; color:#55514b; font-size:13px;">${house[state.lang][1]}</div>
+    </div>
+    <p style="font-family:'Fraunces',serif; text-align:center; max-width:420px; margin:20px auto 0; color:#43403b;">${x.housingConfirmText}</p>
+    <div class="review-block" style="text-align:left; max-width:420px; margin:24px auto 0; border-bottom:none;">
+      <div class="rl">${x.hotelLabel}</div>
+      <div class="rv">${x.hotelCostLine}</div>
+      <p style="font-family:'Fraunces',serif; font-size:13px; font-style:italic; color:#55514b; margin-top:10px;">${x.contribution} (€150–200) + ${x.hotelLabel} (€${HOTEL_COST}) = ${x.totalLabel}: €${rangeLow}–€${rangeHigh}</p>
     </div>`;
-  nav.innerHTML=`<button class="btn" onclick="goBack()">← ${x.back}</button><button class="btn primary" onclick="nextHousing()">${x.continue} →</button>`;
+  nav.innerHTML=`<button class="btn" onclick="goBack()">← ${x.back}</button><button class="btn primary" onclick="nextStep()">${x.continue} →</button>`;
 }
-function selHousing(id){ state.data.housing=id; renderStep(); }
-function nextHousing(){ if(!state.data.housing){ alert(t().errHouse); return; } state.step=2; renderStep(); }
 
 function renderContribution(body,nav){
   const x=t();
@@ -837,6 +847,9 @@ function renderReview(body,nav){
     <div class="review-block"><div class="rl">Email</div><div class="rv">${state.data.email}${state.data.telegram?' · '+state.data.telegram:''}</div></div>
     <div class="review-block"><div class="rl">${x.housing}</div><div class="rv">${house?house[state.lang][0]:'—'}</div></div>
     <div class="review-block"><div class="rl">${x.contribution}</div><div class="rv">€${state.data.contribution}</div></div>
+    ${state.data.housing==='hotel'?`
+    <div class="review-block"><div class="rl">${x.hotelLabel}</div><div class="rv">€${HOTEL_COST}</div></div>
+    <div class="review-block"><div class="rl">${x.totalLabel}</div><div class="rv">€${state.data.contribution+HOTEL_COST}</div></div>`:''}
     <div class="review-block"><div class="rl">${x.involvementTitle}</div><div class="rv">${state.data.involvement.length?state.data.involvement.map(id=>INVOLVEMENT_OPTIONS.find(o=>o.id===id)[state.lang]).join(', '):'—'}${state.data.involvementDetails?' — '+esc(state.data.involvementDetails):''}</div></div>
     <div class="review-block" style="border-bottom:none;">
       <div class="rl">${x.faction}</div>
@@ -876,6 +889,8 @@ async function submitReg(){
   state.data.regId = json && (json.ok || state.data.duplicate) ? json.regId : null;
   state.data.regError = json&&!json.ok&&!state.data.duplicate ? (json.error||true) : null;
   state.data.bank = json ? json.bank : null;
+  const serverHotelCost = json && typeof json.hotelCost!=='undefined' ? (Number(json.hotelCost)||0) : null;
+  state.data.hotelCost = serverHotelCost!==null ? serverHotelCost : (state.data.housing==='hotel'?HOTEL_COST:0);
 
   state.step=3+QUESTIONS.length+2; renderStep();
 }
@@ -883,6 +898,8 @@ async function submitReg(){
 function renderSuccess(body,nav){
   const x=t();
   const bank=state.data.bank;
+  const totalDue=state.data.contribution+(state.data.hotelCost||0);
+  const totalDueHtml=`<p style="font-family:'Oswald',sans-serif; letter-spacing:.08em; font-size:12px; margin-top:6px; color:#55514b;">${x.totalDueLabel}: €${totalDue}</p>`;
   const bankHtml = bank ? `
     <div class="review-block" style="text-align:left; max-width:420px; margin:24px auto 0;">
       <div class="rl">${x.bankTitle}</div>
@@ -897,6 +914,7 @@ function renderSuccess(body,nav){
   if(state.data.duplicate&&state.data.regId){
     body.innerHTML=`<div class="success"><span class="diamond-fill"></span><h3>${x.dupH}</h3><p>${x.dupP}</p>
       <p style="font-family:'Oswald',sans-serif; letter-spacing:.08em; font-size:12px; margin-top:10px; color:#55514b;">${x.regId}: ${state.data.regId}</p>
+      ${totalDueHtml}
       <div style="margin-top:22px;"><a class="btn primary" style="text-decoration:none; display:inline-block;" href="https://t.me/GoldmundKongressBot?start=${encodeURIComponent(state.data.regId)}" target="_blank" rel="noopener">${x.telegramBtn}</a></div>
       <p style="font-family:'Fraunces',serif; font-size:13px; color:#55514b; margin-top:10px;">${x.telegramNote}</p>
       ${bankHtml}
@@ -904,12 +922,13 @@ function renderSuccess(body,nav){
   }else if(state.data.regId){
     body.innerHTML=`<div class="success"><span class="diamond-fill"></span><h3>${x.successH}</h3><p>${x.successP}</p><p style="font-style:italic; margin-top:16px;">${x.successS}</p>
       <p style="font-family:'Oswald',sans-serif; letter-spacing:.08em; font-size:12px; margin-top:10px; color:#55514b;">${x.regId}: ${state.data.regId}</p>
+      ${totalDueHtml}
       <div style="margin-top:22px;"><a class="btn primary" style="text-decoration:none; display:inline-block;" href="https://t.me/GoldmundKongressBot?start=${encodeURIComponent(state.data.regId)}" target="_blank" rel="noopener">${x.telegramBtn}</a></div>
       <p style="font-family:'Fraunces',serif; font-size:13px; color:#55514b; margin-top:10px;">${x.telegramNote}</p>
       ${bankHtml}
     </div>`;
   }else{
-    body.innerHTML=`<div class="success"><span class="diamond-fill"></span><h3>${x.errSubmitH}</h3><p>${x.errSubmitP}</p>${bankHtml}</div>`;
+    body.innerHTML=`<div class="success"><span class="diamond-fill"></span><h3>${x.errSubmitH}</h3><p>${x.errSubmitP}</p>${totalDueHtml}${bankHtml}</div>`;
   }
   nav.innerHTML='';
 }
