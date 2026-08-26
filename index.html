@@ -485,11 +485,13 @@
         <button class="btn" onclick="copyEmailsPaidNoChat()">Copy Emails: Paid, No Chat ID</button>
         <button class="btn" onclick="copyEmailsUnpaid()">Copy Unpaid Emails</button>
         <button class="btn primary" id="sync-btn" onclick="syncSheet()">Sync Sheet</button>
+        <button class="btn" id="sync-group-btn" onclick="syncGroupStatus()">Sync Group Status</button>
         <span id="sync-status" style="font-family:'Oswald',sans-serif; font-size:11px; color:#55514b;"></span>
         <button class="btn" onclick="exportCSV()">Export CSV</button>
         <button class="btn" onclick="closeAdmin()">Close</button>
       </div>
     </div>
+    <div class="admin-stats" id="admin-stats-funnel"></div>
     <div class="admin-stats" id="admin-stats"></div>
     <div class="admin-table-wrap">
       <table id="admin-table"><thead></thead><tbody></tbody></table>
@@ -955,9 +957,16 @@ observeReveals();
 let adminPass='';
 let adminEntries=[];
 let groupLink='';
-let sentActions=new Set();
 let expandedDetails=new Set();
 function isPaidStatus(s){ return (s||'').trim().toLowerCase()==='bezahlt'; }
+// Courtesy cooldown, not a hard skip -- lets bulk invite/remind repeat
+// (correct behavior for reminders) without re-nudging the same person same-week.
+function withinCooldown(ts,days){
+  if(!ts) return false;
+  const then=new Date(ts).getTime();
+  if(isNaN(then)) return false;
+  return (Date.now()-then) < days*24*60*60*1000;
+}
 function openAdmin(){ document.getElementById('admin-screen').classList.add('open'); }
 function closeAdmin(){ document.getElementById('admin-screen').classList.remove('open'); document.getElementById('admin-gate').style.display='block'; document.getElementById('admin-dashboard').style.display='none'; document.getElementById('admin-pass').value=''; }
 async function checkPass(){
@@ -993,19 +1002,37 @@ function renderAdminStats(){
     <div class="stat-card"><div class="num">€${sum}</div><div class="lab">Pledged</div></div>
     <div class="stat-card"><div class="num">${paid}/${total}</div><div class="lab">Paid</div></div>
     ${Object.keys(FACTIONS).map(f=>`<div class="stat-card"><div class="num">${fc[f]}</div><div class="lab">${FACTIONS[f].en}</div></div>`).join('')}`;
+
+  const fw=document.getElementById('admin-stats-funnel');
+  const invitedAwaitingJoin=adminEntries.filter(e=>e.inviteSentAt&&!e.joinedGroup).length;
+  const joinedGroupCount=adminEntries.filter(e=>e.joinedGroup).length;
+  fw.innerHTML=`<div class="stat-card"><div class="num">${total}</div><div class="lab">Registered</div></div>
+    <div class="stat-card"><div class="num">${paid}</div><div class="lab">Paid</div></div>
+    <div class="stat-card"><div class="num">${invitedAwaitingJoin}</div><div class="lab">Invited (awaiting join)</div></div>
+    <div class="stat-card"><div class="num">${joinedGroupCount}</div><div class="lab">Joined Group</div></div>`;
 }
 function renderActionCell(e){
   const isPaid=isPaidStatus(e.paymentStatus);
-  const action=isPaid?'invite':'remind';
-  const label=isPaid?'Send Invite':'Remind';
-  if(sentActions.has(`${action}:${e.regId}`)){
-    return `<button class="btn" disabled style="padding:5px 10px; font-size:10px; opacity:.5;">Sent ✓</button>`;
+  if(isPaid){
+    if(e.joinedGroup){
+      return `<button class="btn" disabled style="padding:5px 10px; font-size:10px; opacity:.5;">Joined ✓</button>`;
+    }
+    if(!e.telegramChatId){
+      return `<button class="btn" disabled title="Kein Telegram-Kontakt" style="padding:5px 10px; font-size:10px;">Send Invite</button>`;
+    }
+    if(withinCooldown(e.inviteSentAt,3)){
+      return `<button class="btn" disabled title="Invited ${new Date(e.inviteSentAt).toLocaleString()}" style="padding:5px 10px; font-size:10px; opacity:.5;">Sent ✓</button>`;
+    }
+    const label=e.inviteSentAt?'Re-invite':'Send Invite';
+    return `<button class="btn" style="padding:5px 10px; font-size:10px;" onclick="sendInvite('${e.regId}')">${label}</button>`;
   }
   if(!e.telegramChatId){
-    return `<button class="btn" disabled title="Kein Telegram-Kontakt" style="padding:5px 10px; font-size:10px;">${label}</button>`;
+    return `<button class="btn" disabled title="Kein Telegram-Kontakt" style="padding:5px 10px; font-size:10px;">Remind</button>`;
   }
-  const handler=isPaid?`sendInvite('${e.regId}')`:`remindUser('${e.regId}')`;
-  return `<button class="btn" style="padding:5px 10px; font-size:10px;" onclick="${handler}">${label}</button>`;
+  if(withinCooldown(e.lastRemindedAt,3)){
+    return `<button class="btn" disabled title="Reminded ${new Date(e.lastRemindedAt).toLocaleString()}" style="padding:5px 10px; font-size:10px; opacity:.5;">Sent ✓</button>`;
+  }
+  return `<button class="btn" style="padding:5px 10px; font-size:10px;" onclick="remindUser('${e.regId}')">Remind</button>`;
 }
 function toggleDetailsExpand(key){
   if(expandedDetails.has(key)) expandedDetails.delete(key); else expandedDetails.add(key);
@@ -1063,7 +1090,11 @@ async function remindUser(regId){
   try{
     const res=await fetch('/.netlify/functions/remind',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId,passphrase:adminPass})});
     const json=await res.json();
-    if(json.ok){ sentActions.add(`remind:${regId}`); renderAdminTable(); }
+    if(json.ok){
+      const entry=adminEntries.find(x=>x.regId===regId);
+      if(entry) entry.lastRemindedAt=new Date().toISOString();
+      renderAdminTable();
+    }
     else alert(json.error||'Could not send reminder.');
   }catch(e){ alert('Could not reach the remind function.'); }
 }
@@ -1078,14 +1109,22 @@ async function sendInvite(regId){
   try{
     const res=await fetch('/.netlify/functions/invite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId,groupLink,passphrase:adminPass})});
     const json=await res.json();
-    if(json.success){ sentActions.add(`invite:${regId}`); renderAdminTable(); }
+    if(json.success){
+      const entry=adminEntries.find(x=>x.regId===regId);
+      if(entry) entry.inviteSentAt=new Date().toISOString();
+      renderAdminTable();
+    }
     else alert(inviteErrorMessage(json.error));
   }catch(e){ alert('Could not reach the invite function.'); }
 }
 async function bulkRemind(){
-  const targets=adminEntries.filter(e=>!isPaidStatus(e.paymentStatus)&&e.telegramChatId&&!sentActions.has(`remind:${e.regId}`));
-  if(!targets.length){ alert('No unpaid registrations with a Telegram contact to remind.'); return; }
-  if(!confirm(`Send payment reminder to ${targets.length} people?`)) return;
+  const unpaid=adminEntries.filter(e=>!isPaidStatus(e.paymentStatus));
+  const noChatId=unpaid.filter(e=>!e.telegramChatId);
+  const recentlyReminded=unpaid.filter(e=>e.telegramChatId&&withinCooldown(e.lastRemindedAt,3));
+  const targets=unpaid.filter(e=>e.telegramChatId&&!withinCooldown(e.lastRemindedAt,3));
+  const breakdown=`${noChatId.length} unpaid + no Chat ID (need email) · ${recentlyReminded.length} reminded recently (skipped) · ${targets.length} will be reminded now.`;
+  if(!targets.length){ alert(`No one to remind right now.\n\n${breakdown}`); return; }
+  if(!confirm(`${breakdown}\n\nProceed?`)) return;
   const prog=document.getElementById('bulk-progress');
   let done=0, failed=0;
   for(const e of targets){
@@ -1093,20 +1132,25 @@ async function bulkRemind(){
     try{
       const res=await fetch('/.netlify/functions/remind',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId:e.regId,passphrase:adminPass})});
       const json=await res.json();
-      if(json.ok) sentActions.add(`remind:${e.regId}`); else failed++;
+      if(json.ok) e.lastRemindedAt=new Date().toISOString(); else failed++;
     }catch(err){ failed++; }
     done++;
     await new Promise(r=>setTimeout(r,200));
   }
   prog.textContent=`Done: ${done-failed}/${targets.length} sent${failed?`, ${failed} failed`:''}.`;
-  renderAdminTable();
+  renderAdminTable(); renderAdminStats();
   setTimeout(()=>{ prog.textContent=''; },6000);
 }
 async function bulkInvite(){
   if(!groupLink){ alert('Paste the Telegram group link first.'); return; }
-  const targets=adminEntries.filter(e=>isPaidStatus(e.paymentStatus)&&e.telegramChatId&&!sentActions.has(`invite:${e.regId}`));
-  if(!targets.length){ alert('No paid registrations with a Telegram contact left to invite.'); return; }
-  if(!confirm(`Send group invite to ${targets.length} people?`)) return;
+  const paid=adminEntries.filter(e=>isPaidStatus(e.paymentStatus));
+  const noChatId=paid.filter(e=>!e.telegramChatId);
+  const alreadyJoined=paid.filter(e=>e.telegramChatId&&e.joinedGroup);
+  const recentlyInvited=paid.filter(e=>e.telegramChatId&&!e.joinedGroup&&withinCooldown(e.inviteSentAt,3));
+  const targets=paid.filter(e=>e.telegramChatId&&!e.joinedGroup&&!withinCooldown(e.inviteSentAt,3));
+  const breakdown=`${noChatId.length} paid + no Chat ID (need manual email) · ${alreadyJoined.length} already joined (skipped) · ${recentlyInvited.length} invited recently, waiting (skipped) · ${targets.length} will be invited now.`;
+  if(!targets.length){ alert(`No one to invite right now.\n\n${breakdown}`); return; }
+  if(!confirm(`${breakdown}\n\nProceed?`)) return;
   const prog=document.getElementById('bulk-progress');
   let done=0, failed=0;
   for(const e of targets){
@@ -1114,13 +1158,13 @@ async function bulkInvite(){
     try{
       const res=await fetch('/.netlify/functions/invite',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId:e.regId,groupLink,passphrase:adminPass})});
       const json=await res.json();
-      if(json.success) sentActions.add(`invite:${e.regId}`); else failed++;
+      if(json.success) e.inviteSentAt=new Date().toISOString(); else failed++;
     }catch(err){ failed++; }
     done++;
     await new Promise(r=>setTimeout(r,200));
   }
   prog.textContent=`Done: ${done-failed}/${targets.length} sent${failed?`, ${failed} failed`:''}.`;
-  renderAdminTable();
+  renderAdminTable(); renderAdminStats();
   setTimeout(()=>{ prog.textContent=''; },6000);
 }
 function showToast(message){
@@ -1163,6 +1207,25 @@ async function syncSheet(){
     const timeStr=new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
     status.textContent=ok?`Synced ✓ · Last synced: ${timeStr}`:'Sync failed — showing last known data.';
   }
+}
+async function syncGroupStatus(){
+  const btn=document.getElementById('sync-group-btn'), status=document.getElementById('sync-status');
+  if(btn) btn.disabled=true;
+  if(status) status.textContent='Checking group membership…';
+  try{
+    const res=await fetch('/.netlify/functions/check-membership',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({passphrase:adminPass})});
+    const json=await res.json();
+    if(!res.ok||!json.ok) throw new Error(json.error||'Could not check group membership.');
+    await loadAdmin();
+    if(status){
+      status.textContent=json.remaining>0
+        ? `Checked ${json.checked}/${json.total} · click "Sync Group Status" again to finish the rest.`
+        : `Group status synced ✓ (${json.total} checked)`;
+    }
+  }catch(e){
+    if(status) status.textContent='Group status check failed: '+(e.message||'unknown error');
+  }
+  if(btn) btn.disabled=false;
 }
 function exportCSV(){
   window.open(`/.netlify/functions/admin?passphrase=${encodeURIComponent(adminPass)}&action=export`, '_blank');

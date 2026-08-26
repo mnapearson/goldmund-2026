@@ -1,12 +1,17 @@
 const { google } = require('googleapis');
 
 const SHEET_NAME = 'Registrations';
-const DATA_RANGE = `${SHEET_NAME}!A2:U`;
-const HEADER_RANGE = `${SHEET_NAME}!A1:U1`;
+// Data-write range (writeRowAt) stays A:U -- a brand new registration has
+// nothing to say yet about group membership or invite/reminder history,
+// so those columns are legitimately blank until later functions fill
+// them in. The read range covers further, through Y, to pick those up.
+const DATA_RANGE = `${SHEET_NAME}!A2:Y`;
+const HEADER_RANGE = `${SHEET_NAME}!A1:Y1`;
 const HEADERS = [
   'Reg ID', 'Name', 'Email', 'Telegram', 'Phone', 'Arrival', 'Housing', 'Contribution (€)',
   'Top Faction', 'M', 'S', 'R', 'T', 'K', 'Payment Status', 'Submitted At', 'Telegram Chat ID', 'Language',
   'Contributions', 'Contribution Details', 'Hotel Cost (€)',
+  'Joined Group', 'Joined Checked At', 'Invite Sent At', 'Last Reminded At',
 ];
 
 let sheetsClient = null;
@@ -120,6 +125,16 @@ async function findRowByRegId(regId) {
   return { rowNumber: idx + 2, row: rows[idx] };
 }
 
+// For a private 1:1 chat with a bot, Telegram's chat_id equals the other
+// party's user_id -- so the "Telegram Chat ID" column doubles as that
+// registrant's user ID for group-membership lookups.
+async function findRowByChatId(chatId) {
+  const rows = await getAllRows();
+  const idx = rows.findIndex((r) => String(r[16] || '') === String(chatId));
+  if (idx === -1) return null;
+  return { rowNumber: idx + 2, row: rows[idx] };
+}
+
 async function updateCell(rowNumber, colLetter, value) {
   const sheets = await getSheets();
   await sheets.spreadsheets.values.update({
@@ -130,4 +145,4 @@ async function updateCell(rowNumber, colLetter, value) {
   });
 }
 
-module.exports = { getAllRows, writeRowAt, ensureHeaders, nextRegId, findRowByRegId, findDuplicate, updateCell, SHEET_NAME, HEADERS };
+module.exports = { getAllRows, writeRowAt, ensureHeaders, nextRegId, findRowByRegId, findRowByChatId, findDuplicate, updateCell, SHEET_NAME, HEADERS };

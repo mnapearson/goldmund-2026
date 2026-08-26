@@ -1,0 +1,88 @@
+const { getAllRows, updateCell } = require('./lib/sheets');
+const { getChatMember } = require('./lib/telegram');
+
+const DELAY_MS = 200;
+// Stay well under Netlify's ~10s default function timeout even after
+// accounting for real Telegram API latency on top of the per-call delay.
+const TIME_BUDGET_MS = 8000;
+const JOINED_STATUSES = new Set(['member', 'administrator', 'creator']);
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+exports.handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: JSON.stringify({ ok: false, error: 'Method not allowed' }) };
+  }
+
+  let data;
+  try {
+    data = JSON.parse(event.body || '{}');
+  } catch (e) {
+    return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'Invalid JSON' }) };
+  }
+
+  if (!process.env.ADMIN_PASSPHRASE || data.passphrase !== process.env.ADMIN_PASSPHRASE) {
+    return { statusCode: 401, body: JSON.stringify({ ok: false, error: 'Incorrect passphrase' }) };
+  }
+
+  const groupChatId = process.env.TELEGRAM_GROUP_CHAT_ID;
+  if (!groupChatId) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ ok: false, error: 'TELEGRAM_GROUP_CHAT_ID is not set. Forward a group message to @userinfobot to find it, then add it to the environment.' }),
+    };
+  }
+
+  try {
+    const rows = await getAllRows();
+    const candidates = [];
+    for (let i = 0; i < rows.length; i++) {
+      const chatId = rows[i][16] || '';
+      if (!chatId) continue;
+      candidates.push({ rowNumber: i + 2, chatId, checkedAt: rows[i][22] || '' });
+    }
+    // Never-checked (empty) and stalest-checked rows first, so repeated
+    // clicks make forward progress instead of re-checking the same rows.
+    candidates.sort((a, b) => {
+      if (!a.checkedAt && !b.checkedAt) return 0;
+      if (!a.checkedAt) return -1;
+      if (!b.checkedAt) return 1;
+      return a.checkedAt.localeCompare(b.checkedAt);
+    });
+
+    const startedAt = Date.now();
+    let checked = 0;
+    for (const candidate of candidates) {
+      if (Date.now() - startedAt > TIME_BUDGET_MS) break;
+
+      let joined = false;
+      try {
+        const res = await getChatMember(groupChatId, candidate.chatId);
+        const status = res.result && res.result.status;
+        joined = JOINED_STATUSES.has(status);
+      } catch (e) {
+        console.error('check-membership: getChatMember failed for', candidate.chatId, e.message);
+        // Leave "Joined Group" untouched on error (e.g. user blocked the bot,
+        // or never actually started a chat with it) but still stamp the
+        // check time so this row isn't perpetually first in line.
+        await updateCell(candidate.rowNumber, 'W', new Date().toISOString());
+        checked++;
+        await sleep(DELAY_MS);
+        continue;
+      }
+
+      await updateCell(candidate.rowNumber, 'V', joined ? 'TRUE' : 'FALSE');
+      await updateCell(candidate.rowNumber, 'W', new Date().toISOString());
+      checked++;
+      await sleep(DELAY_MS);
+    }
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ ok: true, checked, total: candidates.length, remaining: candidates.length - checked }),
+    };
+  } catch (err) {
+    console.error('check-membership error', err);
+    return { statusCode: 500, body: JSON.stringify({ ok: false, error: err.message || 'Could not check group membership.' }) };
+  }
+};

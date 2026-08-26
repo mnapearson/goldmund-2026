@@ -24,6 +24,10 @@ function toEntry(r) {
     contributions: r[18] || '',
     contributionDetails: r[19] || '',
     hotelCost: r[20] || '',
+    joinedGroup: r[21] === 'TRUE',
+    joinedCheckedAt: r[22] || '',
+    inviteSentAt: r[23] || '',
+    lastRemindedAt: r[24] || '',
   };
 }
 

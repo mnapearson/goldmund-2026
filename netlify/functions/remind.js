@@ -1,4 +1,4 @@
-const { findRowByRegId } = require('./lib/sheets');
+const { findRowByRegId, updateCell } = require('./lib/sheets');
 const { buildReminderMessage, sendMessage } = require('./lib/telegram');
 
 function rowToEntry(row) {
@@ -47,6 +47,7 @@ exports.handler = async (event) => {
 
     const html = buildReminderMessage(entry, entry.lang);
     await sendMessage(entry.telegramChatId, html);
+    await updateCell(found.rowNumber, 'Y', new Date().toISOString());
 
     return { statusCode: 200, body: JSON.stringify({ ok: true }) };
   } catch (err) {

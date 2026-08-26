@@ -1,4 +1,4 @@
-const { findRowByRegId } = require('./lib/sheets');
+const { findRowByRegId, updateCell } = require('./lib/sheets');
 const { buildInviteMessage, sendMessage } = require('./lib/telegram');
 
 exports.handler = async (event) => {
@@ -41,6 +41,7 @@ exports.handler = async (event) => {
     const lang = row[17] || 'de';
     const text = buildInviteMessage(data.groupLink, lang);
     await sendMessage(chatId, text);
+    await updateCell(found.rowNumber, 'X', new Date().toISOString());
 
     return { statusCode: 200, body: JSON.stringify({ success: true }) };
   } catch (err) {

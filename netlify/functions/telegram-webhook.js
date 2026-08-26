@@ -1,4 +1,4 @@
-const { findRowByRegId, updateCell } = require('./lib/sheets');
+const { findRowByRegId, findRowByChatId, updateCell } = require('./lib/sheets');
 const { buildConfirmationMessage, sendMessage, deleteMessage, pinChatMessage, createForumTopic, getChatMember, esc } = require('./lib/telegram');
 
 function rowToEntry(row) {
@@ -127,6 +127,30 @@ async function handleSetup(message) {
   return { statusCode: 200, body: 'ok' };
 }
 
+// Keeps "Joined Group" fresh between manual Sync Group Status runs -- fires
+// the moment someone actually joins, instead of only on the next check-membership sweep.
+async function handleNewChatMembers(chatId, newMembers) {
+  const groupChatId = process.env.TELEGRAM_GROUP_CHAT_ID;
+  if (!groupChatId || String(chatId) !== String(groupChatId)) {
+    return { statusCode: 200, body: 'ignored' };
+  }
+
+  const now = new Date().toISOString();
+  for (const member of newMembers) {
+    if (!member || member.is_bot || member.id == null) continue;
+    try {
+      const found = await findRowByChatId(member.id);
+      if (!found) continue;
+      await updateCell(found.rowNumber, 'V', 'TRUE');
+      await updateCell(found.rowNumber, 'W', now);
+    } catch (e) {
+      console.error('new_chat_members: could not update row for', member.id, e);
+    }
+  }
+
+  return { statusCode: 200, body: 'ok' };
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method not allowed' };
@@ -145,6 +169,10 @@ exports.handler = async (event) => {
 
   // Always ack 200 to Telegram — non-200 responses trigger retries.
   if (!chatId) return { statusCode: 200, body: 'ignored' };
+
+  if (Array.isArray(message.new_chat_members) && message.new_chat_members.length) {
+    return handleNewChatMembers(chatId, message.new_chat_members);
+  }
 
   const trimmedText = text.trim();
   if (/^\/setup(?:@\w+)?/.test(trimmedText)) {
