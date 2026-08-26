@@ -170,6 +170,9 @@ exports.handler = async (event) => {
   // Always ack 200 to Telegram — non-200 responses trigger retries.
   if (!chatId) return { statusCode: 200, body: 'ignored' };
 
+  // TEMP DEBUG: remove once TELEGRAM_GROUP_CHAT_ID is confirmed and set.
+  console.log('DEBUG chat id:', chatId, 'chat title:', message.chat.title || '(private chat)', 'chat type:', message.chat.type);
+
   if (Array.isArray(message.new_chat_members) && message.new_chat_members.length) {
     return handleNewChatMembers(chatId, message.new_chat_members);
   }
