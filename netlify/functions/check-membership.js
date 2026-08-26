@@ -50,8 +50,16 @@ exports.handler = async (event) => {
       return a.checkedAt.localeCompare(b.checkedAt);
     });
 
+    // "remaining" tracks registrants that have NEVER been checked even once,
+    // not "candidates this run didn't reach" -- with never-checked rows always
+    // sorted first, this hits 0 exactly once every registrant has an initial
+    // result, regardless of how many runs it took to get there. Re-checking
+    // already-covered rows afterward for freshness doesn't count against it.
+    const neverCheckedTotal = candidates.filter((c) => !c.checkedAt).length;
+
     const startedAt = Date.now();
     let checked = 0;
+    let checkedNeverBefore = 0;
     // Collected and written as one batchUpdate call at the end instead of
     // per-row, so a full sync run (up to ~20+ cell writes) costs a single
     // Sheets API write request rather than tripping the per-minute write quota.
@@ -74,6 +82,7 @@ exports.handler = async (event) => {
       }
       writes.push({ rowNumber: candidate.rowNumber, colLetter: 'W', value: now });
       checked++;
+      if (!candidate.checkedAt) checkedNeverBefore++;
       await sleep(DELAY_MS);
     }
 
@@ -81,7 +90,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ ok: true, checked, total: candidates.length, remaining: candidates.length - checked }),
+      body: JSON.stringify({ ok: true, checked, total: candidates.length, remaining: Math.max(0, neverCheckedTotal - checkedNeverBefore) }),
     };
   } catch (err) {
     console.error('check-membership error', err);
