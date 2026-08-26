@@ -145,4 +145,21 @@ async function updateCell(rowNumber, colLetter, value) {
   });
 }
 
-module.exports = { getAllRows, writeRowAt, ensureHeaders, nextRegId, findRowByRegId, findRowByChatId, findDuplicate, updateCell, SHEET_NAME, HEADERS };
+// Writes many scattered cells as one API call instead of one per cell --
+// a per-row loop calling updateCell twice per row can rack up enough write
+// requests in a single burst to trip Google's per-minute write quota
+// (hit in practice with ~20 calls across 10 rows in an 8s check-membership run).
+// updates: [{ rowNumber, colLetter, value }, ...]
+async function batchUpdateCells(updates) {
+  if (!updates.length) return;
+  const sheets = await getSheets();
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    requestBody: {
+      valueInputOption: 'USER_ENTERED',
+      data: updates.map((u) => ({ range: `${SHEET_NAME}!${u.colLetter}${u.rowNumber}`, values: [[u.value]] })),
+    },
+  });
+}
+
+module.exports = { getAllRows, writeRowAt, ensureHeaders, nextRegId, findRowByRegId, findRowByChatId, findDuplicate, updateCell, batchUpdateCells, SHEET_NAME, HEADERS };

@@ -1,4 +1,4 @@
-const { getAllRows, updateCell } = require('./lib/sheets');
+const { getAllRows, batchUpdateCells } = require('./lib/sheets');
 const { getChatMember } = require('./lib/telegram');
 
 const DELAY_MS = 200;
@@ -52,30 +52,32 @@ exports.handler = async (event) => {
 
     const startedAt = Date.now();
     let checked = 0;
+    // Collected and written as one batchUpdate call at the end instead of
+    // per-row, so a full sync run (up to ~20+ cell writes) costs a single
+    // Sheets API write request rather than tripping the per-minute write quota.
+    const writes = [];
     for (const candidate of candidates) {
       if (Date.now() - startedAt > TIME_BUDGET_MS) break;
 
+      const now = new Date().toISOString();
       let joined = false;
       try {
         const res = await getChatMember(groupChatId, candidate.chatId);
         const status = res.result && res.result.status;
         joined = JOINED_STATUSES.has(status);
+        writes.push({ rowNumber: candidate.rowNumber, colLetter: 'V', value: joined ? 'TRUE' : 'FALSE' });
       } catch (e) {
         console.error('check-membership: getChatMember failed for', candidate.chatId, e.message);
         // Leave "Joined Group" untouched on error (e.g. user blocked the bot,
         // or never actually started a chat with it) but still stamp the
         // check time so this row isn't perpetually first in line.
-        await updateCell(candidate.rowNumber, 'W', new Date().toISOString());
-        checked++;
-        await sleep(DELAY_MS);
-        continue;
       }
-
-      await updateCell(candidate.rowNumber, 'V', joined ? 'TRUE' : 'FALSE');
-      await updateCell(candidate.rowNumber, 'W', new Date().toISOString());
+      writes.push({ rowNumber: candidate.rowNumber, colLetter: 'W', value: now });
       checked++;
       await sleep(DELAY_MS);
     }
+
+    await batchUpdateCells(writes);
 
     return {
       statusCode: 200,
