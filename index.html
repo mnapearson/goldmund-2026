@@ -445,6 +445,7 @@
     </div>
     <div class="signup-frame reveal">
       <div class="signup-shell">
+        <div id="capacity-note" style="display:none; text-align:center; font-family:'Fraunces',serif; font-style:italic; font-size:13.5px; color:#55514b; margin-bottom:14px;"></div>
         <div class="step-indicator" id="step-indicator"></div>
         <div id="form-body"></div>
         <div class="nav-row" id="nav-row"></div>
@@ -484,6 +485,7 @@
         <button class="btn" onclick="bulkInvite()">Bulk Invite All Paid</button>
         <button class="btn" onclick="copyEmailsPaidNoChat()">Copy Emails: Paid, No Chat ID</button>
         <button class="btn" onclick="copyEmailsUnpaid()">Copy Unpaid Emails</button>
+        <button class="btn" onclick="copyEmailsWaitlist()">Copy Waitlist Emails</button>
         <button class="btn primary" id="sync-btn" onclick="syncSheet()">Sync Sheet</button>
         <button class="btn" id="sync-group-btn" onclick="syncGroupStatus()">Sync Group Status</button>
         <span id="sync-status" style="font-family:'Oswald',sans-serif; font-size:11px; color:#55514b;"></span>
@@ -623,6 +625,8 @@ const T = {
        contribFine:"Die Zahlung erfolgt separat per Überweisung — die Bankdaten erhältst du direkt im Anschluss an deine Anmeldung.",
        review:"Überprüfen", leaning:"Tendenz zu", placement:"Die finale Fraktionszuteilung erfolgt durch die Organisator:innen.",
        successH:"Du bist auf der Liste.", successP:"Willkommen, zukünftige*r Goldmund. Deine Fraktion bleibt geheim, bis wir uns beim Kongress sehen.", successS:"Wir sehen uns in Zeitz.",
+       waitlistH:"Du stehst auf der Warteliste.", waitlistP:"Der Kongress ist aktuell ausgebucht. Sobald ein Platz frei wird, melden wir uns bei dir — dann erhältst du auch die Bankdaten für deine Überweisung.", waitlistS:"Wir hoffen, du bist bald dabei.",
+       waitlistNote:"Es ist noch nichts zu überweisen.",
        q:"Frage", housing:"Unterkunft", contribution:"Kostenbeteiligung", faction:"Fraktion", selectDay:"Auswählen…",
        errName:"Bitte gib mindestens Name und E-Mail an.",
        submitting:"Wird gesendet…", regId:"Anmeldenummer",
@@ -634,13 +638,16 @@ const T = {
        bankRefValue:"„Nachname, Vorname + Kostenbeteiligung Goldmund 2026\"",
        bankCompleteNote:"Hinweis: Die Anmeldung ist erst mit Überweisung des Beitrags komplett!",
        errSubmitH:"Fast geschafft.", errSubmitP:"Deine Anmeldung konnte nicht automatisch gespeichert werden. Bitte kontaktiere die Organisator*innen, damit sie dich manuell eintragen — du kannst aber schon jetzt mit den unten stehenden Bankdaten überweisen.",
-       dupH:"Du bist schon dabei!", dupP:"Diese Email-Adresse oder Telefonnummer ist bereits registriert. Falls dir das komisch vorkommt oder du deine Angaben ändern möchtest, wende dich an die Organisator*innen." },
+       dupH:"Du bist schon dabei!", dupP:"Diese Email-Adresse oder Telefonnummer ist bereits registriert. Falls dir das komisch vorkommt oder du deine Angaben ändern möchtest, wende dich an die Organisator*innen.",
+       capacityFullNote:"Der Kongress ist aktuell ausgebucht — neue Anmeldungen kommen auf die Warteliste." },
   en:{ step:["Who you are","Where you sleep","Your contribution"], continue:"Continue", back:"Back", submit:"Submit registration",
        name:"Full name", arrival:"Arrival day", contribTitle:"Your contribution",
        contribNote:"Pay on a sliding scale — whatever feels right for you. Accommodation is not included.",
        contribFine:"Payment is handled separately by bank transfer — you'll receive the bank details right after you register.",
        review:"Review", leaning:"Leaning toward", placement:"Final faction placement is curated by the organizers.",
        successH:"You're on the list.", successP:"Welcome, future Goldmund. Your faction stays secret until we see you at the congress.", successS:"See you in Zeitz.",
+       waitlistH:"You're on the waiting list.", waitlistP:"The congress is currently full. As soon as a spot opens up, we'll reach out — you'll get the bank details for your transfer then.", waitlistS:"We hope you'll join us soon.",
+       waitlistNote:"There's nothing to transfer yet.",
        q:"Question", housing:"Housing", contribution:"Contribution", faction:"Faction", selectDay:"Select…",
        errName:"Please enter at least your name and email.",
        submitting:"Submitting…", regId:"Registration ID",
@@ -652,7 +659,8 @@ const T = {
        bankRefValue:"“Last name, first name + Goldmund 2026 contribution”",
        bankCompleteNote:"Note: Registration is only complete once the contribution has been transferred!",
        errSubmitH:"Almost there.", errSubmitP:"Your registration couldn't be saved automatically. Please contact the organizers so they can register you manually — you can already transfer using the bank details below.",
-       dupH:"You're already on the list!", dupP:"This email address or phone number is already registered. If that seems wrong, or you'd like to change your details, please contact the organizers." }
+       dupH:"You're already on the list!", dupP:"This email address or phone number is already registered. If that seems wrong, or you'd like to change your details, please contact the organizers.",
+       capacityFullNote:"The congress is currently full — new registrations will join the waiting list." }
 };
 
 const HEADINGS = {
@@ -689,7 +697,21 @@ function setLang(l){
   document.getElementById('head-2').textContent=h.h2; document.getElementById('kick-2').textContent=h.k2;
   document.getElementById('head-3').textContent=h.h3; document.getElementById('kick-3').textContent=h.k3; document.getElementById('sub-3').textContent=h.sub3;
   document.getElementById('head-4').textContent=h.h4; document.getElementById('kick-4').textContent=h.k4;
-  renderRegister(); renderGameText(); renderStep();
+  renderRegister(); renderGameText(); renderStep(); renderCapacityNote();
+}
+let capacityInfo=null;
+function renderCapacityNote(){
+  const el=document.getElementById('capacity-note');
+  if(!el||!capacityInfo||!capacityInfo.full){ if(el) el.style.display='none'; return; }
+  el.textContent=t().capacityFullNote;
+  el.style.display='block';
+}
+async function loadCapacityNote(){
+  try{
+    const res=await fetch('/.netlify/functions/capacity');
+    const json=await res.json();
+    if(json&&json.ok){ capacityInfo=json; renderCapacityNote(); }
+  }catch(e){ /* non-critical -- form still works without this note */ }
 }
 
 function renderRegister(){
@@ -890,6 +912,7 @@ async function submitReg(){
   state.data.duplicate = !!(json && json.code==='duplicate');
   state.data.regId = json && (json.ok || state.data.duplicate) ? json.regId : null;
   state.data.regError = json&&!json.ok&&!state.data.duplicate ? (json.error||true) : null;
+  state.data.waitlisted = !!(json && json.waitlisted);
   state.data.bank = json ? json.bank : null;
   const serverHotelCost = json && typeof json.hotelCost!=='undefined' ? (Number(json.hotelCost)||0) : null;
   state.data.hotelCost = serverHotelCost!==null ? serverHotelCost : (state.data.housing==='hotel'?HOTEL_COST:0);
@@ -920,6 +943,13 @@ function renderSuccess(body,nav){
       <div style="margin-top:22px;"><a class="btn primary" style="text-decoration:none; display:inline-block;" href="https://t.me/GoldmundKongressBot?start=${encodeURIComponent(state.data.regId)}" target="_blank" rel="noopener">${x.telegramBtn}</a></div>
       <p style="font-family:'Fraunces',serif; font-size:13px; color:#55514b; margin-top:10px;">${x.telegramNote}</p>
       ${bankHtml}
+    </div>`;
+  }else if(state.data.regId&&state.data.waitlisted){
+    body.innerHTML=`<div class="success"><span class="diamond-fill"></span><h3>${x.waitlistH}</h3><p>${x.waitlistP}</p><p style="font-style:italic; margin-top:16px;">${x.waitlistS}</p>
+      <p style="font-family:'Oswald',sans-serif; letter-spacing:.08em; font-size:12px; margin-top:10px; color:#55514b;">${x.regId}: ${state.data.regId}</p>
+      <p style="font-family:'Fraunces',serif; font-size:13px; color:#55514b; margin-top:10px;">${x.waitlistNote}</p>
+      <div style="margin-top:22px;"><a class="btn primary" style="text-decoration:none; display:inline-block;" href="https://t.me/GoldmundKongressBot?start=${encodeURIComponent(state.data.regId)}" target="_blank" rel="noopener">${x.telegramBtn}</a></div>
+      <p style="font-family:'Fraunces',serif; font-size:13px; color:#55514b; margin-top:10px;">${x.telegramNote}</p>
     </div>`;
   }else if(state.data.regId){
     body.innerHTML=`<div class="success"><span class="diamond-fill"></span><h3>${x.successH}</h3><p>${x.successP}</p><p style="font-style:italic; margin-top:16px;">${x.successS}</p>
@@ -952,6 +982,7 @@ renderRegister();
 renderGameText();
 renderStep();
 observeReveals();
+loadCapacityNote();
 
 /* ============ ADMIN ============ */
 let adminPass='';
@@ -997,10 +1028,14 @@ async function loadAdmin(){
 function renderAdminStats(){
   const w=document.getElementById('admin-stats'); const total=adminEntries.length; const sum=adminEntries.reduce((a,e)=>a+(e.contribution||0),0);
   const paid=adminEntries.filter(e=>isPaidStatus(e.paymentStatus)).length;
+  const activeCount=adminEntries.filter(e=>!e.waitlisted).length;
+  const waitlistCount=adminEntries.filter(e=>e.waitlisted).length;
   const fc={M:0,S:0,R:0,T:0,K:0}; adminEntries.forEach(e=>{if(e.topFaction)fc[e.topFaction]++;});
   w.innerHTML=`<div class="stat-card"><div class="num">${total}</div><div class="lab">Registrations</div></div>
     <div class="stat-card"><div class="num">€${sum}</div><div class="lab">Pledged</div></div>
     <div class="stat-card"><div class="num">${paid}/${total}</div><div class="lab">Paid</div></div>
+    <div class="stat-card"><div class="num">${activeCount}/110</div><div class="lab">Capacity</div></div>
+    <div class="stat-card"><div class="num">${waitlistCount}</div><div class="lab">Waitlist</div></div>
     ${Object.keys(FACTIONS).map(f=>`<div class="stat-card"><div class="num">${fc[f]}</div><div class="lab">${FACTIONS[f].en}</div></div>`).join('')}`;
 
   const fw=document.getElementById('admin-stats-funnel');
@@ -1012,6 +1047,9 @@ function renderAdminStats(){
     <div class="stat-card"><div class="num">${joinedGroupCount}</div><div class="lab">Joined Group</div></div>`;
 }
 function renderActionCell(e){
+  if(e.waitlisted){
+    return `<button class="btn" style="padding:5px 10px; font-size:10px;" onclick="promoteUser('${e.regId}')">Promote</button>`;
+  }
   const isPaid=isPaidStatus(e.paymentStatus);
   if(isPaid){
     if(e.joinedGroup){
@@ -1055,13 +1093,13 @@ function renderAdminTable(){
   es.style.display='none';
   const sorted=[...adminEntries].sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
   tb.innerHTML=sorted.map(e=>{ const s=e.scores||{}; const fac=e.topFaction&&FACTIONS[e.topFaction]; const isPaid=isPaidStatus(e.paymentStatus);
-    const rowStyle=isPaid?' style="background:rgba(169,133,47,.08);"':'';
-    const firstCellStyle=isPaid?' style="border-left:3px solid var(--brass);"':'';
+    const rowStyle=e.waitlisted?' style="background:rgba(107,100,88,.10);"':(isPaid?' style="background:rgba(169,133,47,.08);"':'');
+    const firstCellStyle=e.waitlisted?' style="border-left:3px solid #6b6458;"':(isPaid?' style="border-left:3px solid var(--brass);"':'');
     return `<tr${rowStyle}>
     <td${firstCellStyle}>${esc(e.regId)}</td><td>${esc(e.name)}</td><td>${esc(e.email)}</td><td>${esc(e.telegram)}</td><td>${esc(e.housing)}</td>
     <td>€${e.contribution||0}</td><td><span class="fchip" style="background:${fac?fac.color:'#999'}">${fac?fac.en:'—'}</span></td>
     <td>${s.M||0}</td><td>${s.S||0}</td><td>${s.R||0}</td><td>${s.T||0}</td><td>${s.K||0}</td>
-    <td><span class="fchip" style="background:${isPaid?'var(--brass)':'#999'}; cursor:pointer;" title="Klicken zum Umschalten" onclick="togglePayment(this,'${e.regId}','${e.paymentStatus}')">${esc(e.paymentStatus)}</span></td>
+    <td><span class="fchip" style="background:${isPaid?'var(--brass)':'#999'}; cursor:pointer;" title="Klicken zum Umschalten" onclick="togglePayment(this,'${e.regId}','${e.paymentStatus}')">${esc(e.paymentStatus)}</span> ${e.waitlisted?`<span class="fchip" style="background:#6b6458;">Waitlist</span>`:''}</td>
     <td>${e.submittedAt?new Date(e.submittedAt).toLocaleString():'—'}</td>
     <td style="white-space:normal; max-width:220px;">${renderTruncatedCell(e,'contributions',50)}</td>
     <td style="white-space:normal; max-width:280px;">${renderTruncatedCell(e,'contributionDetails',60)}</td>
@@ -1084,6 +1122,20 @@ async function togglePayment(el,regId,currentStatus){
     el.title='Fehler: '+(err.message||'unbekannt'); el.style.outline='1px solid var(--red)';
     setTimeout(()=>{ el.style.outline=''; },2500);
   }
+}
+async function promoteUser(regId){
+  if(!confirm(`Promote ${regId} off the waitlist? They'll be sent the normal payment confirmation if they have a Telegram contact.`)) return;
+  try{
+    const res=await fetch('/.netlify/functions/promote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId,passphrase:adminPass})});
+    const json=await res.json();
+    if(json.ok){
+      const entry=adminEntries.find(x=>x.regId===regId);
+      if(entry) entry.waitlisted=false;
+      renderAdminTable(); renderAdminStats();
+      if(!json.hasChatId) alert(`${regId} promoted, but they have no Telegram contact yet — email them the payment details manually.`);
+    }
+    else alert(json.error||'Could not promote from waitlist.');
+  }catch(e){ alert('Could not reach the promote function.'); }
 }
 async function remindUser(regId){
   if(!confirm(`Send a payment reminder to ${regId} via Telegram?`)) return;
@@ -1118,7 +1170,7 @@ async function sendInvite(regId){
   }catch(e){ alert('Could not reach the invite function.'); }
 }
 async function bulkRemind(){
-  const unpaid=adminEntries.filter(e=>!isPaidStatus(e.paymentStatus));
+  const unpaid=adminEntries.filter(e=>!isPaidStatus(e.paymentStatus)&&!e.waitlisted);
   const noChatId=unpaid.filter(e=>!e.telegramChatId);
   const recentlyReminded=unpaid.filter(e=>e.telegramChatId&&withinCooldown(e.lastRemindedAt,3));
   const targets=unpaid.filter(e=>e.telegramChatId&&!withinCooldown(e.lastRemindedAt,3));
@@ -1143,7 +1195,7 @@ async function bulkRemind(){
 }
 async function bulkInvite(){
   if(!groupLink){ alert('Paste the Telegram group link first.'); return; }
-  const paid=adminEntries.filter(e=>isPaidStatus(e.paymentStatus));
+  const paid=adminEntries.filter(e=>isPaidStatus(e.paymentStatus)&&!e.waitlisted);
   const noChatId=paid.filter(e=>!e.telegramChatId);
   const alreadyJoined=paid.filter(e=>e.telegramChatId&&e.joinedGroup);
   const recentlyInvited=paid.filter(e=>e.telegramChatId&&!e.joinedGroup&&withinCooldown(e.inviteSentAt,3));
@@ -1196,6 +1248,9 @@ function copyEmailsPaidNoChat(){
 }
 function copyEmailsUnpaid(){
   copyEmails(e=>!isPaidStatus(e.paymentStatus)&&!e.telegramChatId, 'Unpaid, no Chat ID');
+}
+function copyEmailsWaitlist(){
+  copyEmails(e=>e.waitlisted, 'Waitlist');
 }
 async function syncSheet(){
   const btn=document.getElementById('sync-btn'), status=document.getElementById('sync-status');

@@ -1,17 +1,18 @@
 const { google } = require('googleapis');
 
 const SHEET_NAME = 'Registrations';
-// Data-write range (writeRowAt) stays A:U -- a brand new registration has
-// nothing to say yet about group membership or invite/reminder history,
-// so those columns are legitimately blank until later functions fill
-// them in. The read range covers further, through Y, to pick those up.
-const DATA_RANGE = `${SHEET_NAME}!A2:Y`;
-const HEADER_RANGE = `${SHEET_NAME}!A1:Y1`;
+// Data-write range (writeRowAt) covers A:Z -- unlike group-membership/invite
+// history (V-Y), which is genuinely unknown until later functions fill it
+// in, Waitlisted (Z) IS known at signup time (register.js computes it
+// against live capacity), so it's written alongside the rest of the row.
+const DATA_RANGE = `${SHEET_NAME}!A2:Z`;
+const HEADER_RANGE = `${SHEET_NAME}!A1:Z1`;
 const HEADERS = [
   'Reg ID', 'Name', 'Email', 'Telegram', 'Phone', 'Arrival', 'Housing', 'Contribution (€)',
   'Top Faction', 'M', 'S', 'R', 'T', 'K', 'Payment Status', 'Submitted At', 'Telegram Chat ID', 'Language',
   'Contributions', 'Contribution Details', 'Hotel Cost (€)',
   'Joined Group', 'Joined Checked At', 'Invite Sent At', 'Last Reminded At',
+  'Waitlisted',
 ];
 
 let sheetsClient = null;
@@ -73,7 +74,7 @@ async function writeRowAt(rowNumber, row) {
   const sheets = await getSheets();
   await sheets.spreadsheets.values.update({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A${rowNumber}:U${rowNumber}`,
+    range: `${SHEET_NAME}!A${rowNumber}:Z${rowNumber}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });

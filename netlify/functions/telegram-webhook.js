@@ -1,5 +1,5 @@
 const { findRowByRegId, findRowByChatId, updateCell } = require('./lib/sheets');
-const { buildConfirmationMessage, sendMessage, deleteMessage, pinChatMessage, createForumTopic, getChatMember, esc } = require('./lib/telegram');
+const { buildConfirmationMessage, buildWaitlistMessage, sendMessage, deleteMessage, pinChatMessage, createForumTopic, getChatMember, esc } = require('./lib/telegram');
 
 function rowToEntry(row) {
   return {
@@ -10,6 +10,7 @@ function rowToEntry(row) {
     topFaction: row[8] || '',
     scores: { M: Number(row[9]) || 0, S: Number(row[10]) || 0, R: Number(row[11]) || 0, T: Number(row[12]) || 0, K: Number(row[13]) || 0 },
     lang: row[17] || 'de',
+    waitlisted: row[25] === 'TRUE',
   };
 }
 
@@ -202,7 +203,7 @@ exports.handler = async (event) => {
     await updateCell(found.rowNumber, 'Q', chatId);
 
     const entry = rowToEntry(found.row);
-    const html = buildConfirmationMessage(entry, entry.lang);
+    const html = entry.waitlisted ? buildWaitlistMessage(entry, entry.lang) : buildConfirmationMessage(entry, entry.lang);
     await sendMessage(chatId, html);
   } catch (err) {
     console.error('telegram-webhook error', err);

@@ -5,6 +5,12 @@ const { writeRowAt, ensureHeaders, nextRegId, getAllRows, findDuplicate } = requ
 // a client-sent number, since it's meant to be fixed, not adjustable.
 const HOTEL_COST = 105;
 
+// Venue capacity. Computed live against non-waitlisted rows at submission
+// time (not a persisted counter), so it self-corrects if someone is later
+// removed from the sheet or promoted off the waitlist -- the 111th active
+// signup always lands on the waitlist, whichever row number that turns out to be.
+const MAX_CAPACITY = 110;
+
 function bankBlock() {
   return {
     bank: process.env.PAYMENT_BANK || '',
@@ -82,6 +88,9 @@ exports.handler = async (event) => {
     const submittedAt = new Date().toISOString();
     const hotelCost = housing === 'hotel' ? HOTEL_COST : '';
 
+    const activeCount = rows.filter((r) => (r[25] || '').trim().toUpperCase() !== 'TRUE').length;
+    const waitlisted = activeCount >= MAX_CAPACITY;
+
     const regId = await writeRegistrationRow(
       (id) => [
         id,
@@ -105,11 +114,13 @@ exports.handler = async (event) => {
         data.contributions || '',
         data.contributionDetails || '',
         hotelCost,
+        '', '', '', '', // Joined Group / Joined Checked At / Invite Sent At / Last Reminded At — unknown until later
+        waitlisted ? 'TRUE' : 'FALSE',
       ],
       rows
     );
 
-    return { statusCode: 200, body: JSON.stringify({ ok: true, regId, bank, hotelCost }) };
+    return { statusCode: 200, body: JSON.stringify({ ok: true, regId, bank, hotelCost, waitlisted }) };
   } catch (err) {
     console.error('register error', err);
     return {

@@ -77,6 +77,27 @@ function buildConfirmationMessage(entry, lang) {
   );
 }
 
+function buildWaitlistMessage(entry, lang) {
+  const isDe = lang !== 'en';
+
+  if (isDe) {
+    return (
+      `<b>Goldmund,</b>\n\n` +
+      `danke für deine Anmeldung zum Goldenen Kongress, ${esc(entry.name)}!\n\n` +
+      `Der Kongress ist aktuell ausgebucht — du stehst auf der Warteliste. Du musst vorerst nichts überweisen. Falls ein Platz frei wird, melden wir uns hier bei dir, und du bekommst dann die Bankdaten für deine Überweisung.\n\n` +
+      `<i>Goldmund ist ein Spektakel ohne Zuschauer — wir hoffen, dass ein Platz für dich frei wird.</i>\n\n` +
+      `— Der Goldene Kongress\n1.–4. Oktober 2026 · Zeitz`
+    );
+  }
+  return (
+    `<b>Goldmund,</b>\n\n` +
+    `thank you for registering for the Golden Congress, ${esc(entry.name)}!\n\n` +
+    `The congress is currently full — you're on the waiting list. There's nothing to transfer for now. If a spot opens up, we'll message you here with the bank details for your transfer.\n\n` +
+    `<i>Goldmund is a spectacle without spectators — we hope a place opens up for you.</i>\n\n` +
+    `— The Golden Congress\nOctober 1–4, 2026 · Zeitz`
+  );
+}
+
 function buildReminderMessage(entry, lang) {
   const isDe = lang !== 'en';
   const bank = bankBlock();
@@ -170,6 +191,7 @@ async function getChatMember(chatId, userId) {
 
 module.exports = {
   buildConfirmationMessage,
+  buildWaitlistMessage,
   buildReminderMessage,
   buildInviteMessage,
   sendMessage,

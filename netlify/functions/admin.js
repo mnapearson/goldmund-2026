@@ -28,6 +28,7 @@ function toEntry(r) {
     joinedCheckedAt: r[22] || '',
     inviteSentAt: r[23] || '',
     lastRemindedAt: r[24] || '',
+    waitlisted: r[25] === 'TRUE',
   };
 }
 
