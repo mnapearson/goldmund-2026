@@ -39,6 +39,49 @@ const SETUP_TOPICS = [
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Filled in from each topic's Telegram share link (long-press the topic ->
+// Copy Link -> the number after the last "/"), since createForumTopic's
+// returned message_thread_id from /setup was never persisted anywhere.
+const TOPIC_IDS = {
+  announcements: 16, // 📢 Ankündigungen
+  music: 24,         // 🎵 Musik & DJs
+  workshops: 22,     // 🎭 Programm & Workshops
+  bar: 30,           // 🍸 Bar
+  buildStrike: 32,   // 🔧 Aufbau & Abbau
+  decor: 26,         // 🎨 Deko & Räume
+};
+
+const LAUNCH_MESSAGES = [
+  { topic: 'announcements', text:
+    `Goldmund,\n\n` +
+    `der Schichtplan ist live! Küche, Bar (Phonotek & Saal), Awareness, Aufbau, LNT, Sauna, Site Lead, Playroom und mehr — alles wartet auf euch.\n\n` +
+    `Trage dich für mindestens 3 Schichten ein, wo auch immer dich es hinzieht:\n` +
+    `https://docs.google.com/spreadsheets/d/1qvCOeQUDSM0zTF5FMtexHPZ2MBDJBBzH5XlcWOGLsb8/edit?usp=sharing\n\n` +
+    `Goldmund lebt von Co-Creation. Ohne euch läuft nichts — mit euch läuft alles.\n\n` +
+    `— Der Goldene Kongress` },
+  { topic: 'music', text:
+    `Goldmund,\n\n` +
+    `Steffi sucht noch eine*n Co-Lead für die Musikalische Leitung — jemand, der/die Lust hat, gemeinsam Line-up, Jam-Sessions und den musikalischen roten Faden des Wochenendes mitzugestalten.\n\n` +
+    `Wenn dich das reizt, meldet euch bei Steffi oder hier im Kanal.` },
+  { topic: 'workshops', text:
+    `Goldmund,\n\n` +
+    `wir suchen noch eine*n Playroom-Lead — Gestaltung des Playroom-Vibes, Opening Hours, Safer-Sex-Materialien und Consent-Regeln im Blick behalten. Wenn dich das anspricht, melde dich!` },
+  { topic: 'bar', text:
+    `Goldmund,\n\n` +
+    `wir haben jetzt ZWEI Bars — Phonotek Bar und Saal Bar — und beide suchen noch eine*n Lead! Getränkeauswahl, Barschichten koordinieren, Bowle-Regeln festlegen. Wer Lust hat, das Zepter für eine der beiden Bars zu übernehmen, meldet sich hier.` },
+  { topic: 'buildStrike', text:
+    `Goldmund,\n\n` +
+    `zwei Rollen sind noch offen:\n` +
+    `— Strike Lead (Abbau Sonntag) — Aaron hält aktuell nur provisorisch die Stellung.\n` +
+    `— Transport & Aufbau Lead — Koordination von Autos, Transportern, Be- und Entladen zwischen Leipzig und Berlin.\n\n` +
+    `Wer Lust hat, meldet sich hier oder bei Micky.` },
+  { topic: 'decor', text:
+    `Goldmund,\n\n` +
+    `hier ein erster Blick in unsere Räume aus dem Location-Tour letzte Woche — Bibliothek (EG, OG, Keller, Garten) und Nikolaikirche (Innenraum, Außenbereich):\n\n` +
+    `https://drive.google.com/drive/folders/14yHsmA5kXHbPr1rCDf7vSncX270ceUWi?usp=sharing\n\n` +
+    `Nutzt die Fotos für eure Deko-Planung — was passt wo?` },
+];
+
 // Accepts the hardcoded ADMIN_TELEGRAM_ID as a fast path, but that alone
 // missed real organizers -- Telegram distinguishes the group's "creator"
 // (owner) from promoted "administrator" accounts, and a single fixed ID
@@ -128,6 +171,48 @@ async function handleSetup(message) {
   return { statusCode: 200, body: 'ok' };
 }
 
+async function handleLaunch(message) {
+  const chatId = message.chat.id;
+  const fromId = message.from && message.from.id;
+
+  const authorized = await isAuthorizedSender(chatId, fromId);
+  if (!authorized) {
+    try {
+      await sendMessage(chatId, 'Nur für Organisator*innen.');
+    } catch (e) {
+      console.error('launch reject send error', e);
+    }
+    return { statusCode: 200, body: 'ok' };
+  }
+
+  const missingTopics = Object.entries(TOPIC_IDS).filter(([, id]) => !id).map(([key]) => key);
+  if (missingTopics.length) {
+    try {
+      await sendMessage(chatId, `TOPIC_IDS ist noch nicht vollständig ausgefüllt (fehlt: ${missingTopics.join(', ')}). Bitte in telegram-webhook.js eintragen und neu deployen.`);
+    } catch (e) {
+      console.error('launch missing-topic-ids notice error', e);
+    }
+    return { statusCode: 200, body: 'ok' };
+  }
+
+  for (const { topic, text } of LAUNCH_MESSAGES) {
+    try {
+      await sendMessage(chatId, text, { message_thread_id: TOPIC_IDS[topic] });
+    } catch (err) {
+      console.error(`launch: could not send to topic "${topic}"`, err);
+    }
+    await sleep(300);
+  }
+
+  try {
+    await sendMessage(chatId, 'Launch messages posted.');
+  } catch (e) {
+    console.error('launch confirmation send error', e);
+  }
+
+  return { statusCode: 200, body: 'ok' };
+}
+
 // Keeps "Joined Group" fresh between manual Sync Group Status runs -- fires
 // the moment someone actually joins, instead of only on the next check-membership sweep.
 async function handleNewChatMembers(chatId, newMembers) {
@@ -178,6 +263,9 @@ exports.handler = async (event) => {
   const trimmedText = text.trim();
   if (/^\/setup(?:@\w+)?/.test(trimmedText)) {
     return handleSetup(message);
+  }
+  if (/^\/launch(?:@\w+)?/.test(trimmedText)) {
+    return handleLaunch(message);
   }
 
   const match = /^\/start(?:@\w+)?(?:\s+(\S+))?/.exec(trimmedText);
