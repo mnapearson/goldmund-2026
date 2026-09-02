@@ -7,7 +7,12 @@
   # exclude from the secret scanner. PAYMENT_HOLDER coincidentally matches
   # the event's own name ("Goldmund"), which appears throughout index.html's
   # marketing copy and otherwise fails the build as a false positive.
-  SECRETS_SCAN_OMIT_KEYS = "PAYMENT_BANK,PAYMENT_IBAN,PAYMENT_BIC,PAYMENT_HOLDER,PAYMENT_DEADLINE,PAYMENT_WERO_PHONE,PAYMENT_BANK_ADDRESS"
+  # GOOGLE_SHEET_ID is the same kind of false positive: its value is a
+  # spreadsheet file ID, not a bearer credential -- write access is gated by
+  # the service account's private key, not by knowing this ID -- and its
+  # real shareable link is deliberately posted to guests (e.g. the /launch
+  # shift-schedule message in telegram-webhook.js).
+  SECRETS_SCAN_OMIT_KEYS = "PAYMENT_BANK,PAYMENT_IBAN,PAYMENT_BIC,PAYMENT_HOLDER,PAYMENT_DEADLINE,PAYMENT_WERO_PHONE,PAYMENT_BANK_ADDRESS,GOOGLE_SHEET_ID"
 
 [functions]
   node_bundler = "esbuild"
