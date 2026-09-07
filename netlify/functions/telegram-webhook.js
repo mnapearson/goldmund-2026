@@ -1,5 +1,6 @@
 const { findRowByRegId, findRowByChatId, updateCell } = require('./lib/sheets');
 const { buildConfirmationMessage, buildWaitlistMessage, sendMessage, deleteMessage, pinChatMessage, createForumTopic, getChatMember, esc } = require('./lib/telegram');
+const { runHotelNotify } = require('./lib/hotelNotify');
 
 function rowToEntry(row) {
   return {
@@ -213,6 +214,35 @@ async function handleLaunch(message) {
   return { statusCode: 200, body: 'ok' };
 }
 
+async function handleNotifyHotel(message) {
+  const chatId = message.chat.id;
+  const fromId = message.from && message.from.id;
+
+  const authorized = await isAuthorizedSender(chatId, fromId);
+  if (!authorized) {
+    try {
+      await sendMessage(chatId, 'Nur für Organisator*innen.');
+    } catch (e) {
+      console.error('notifyhotel reject send error', e);
+    }
+    return { statusCode: 200, body: 'ok' };
+  }
+
+  try {
+    const { sentTo, alreadyNotified } = await runHotelNotify();
+    await sendMessage(chatId, `✓ Hotel-Benachrichtigung gesendet an ${sentTo} Person(en). ${alreadyNotified} waren bereits benachrichtigt.`);
+  } catch (err) {
+    console.error('notifyhotel error', err);
+    try {
+      await sendMessage(chatId, `Fehler beim Senden der Hotel-Benachrichtigungen: ${esc(err.message)}`);
+    } catch (e) {
+      console.error('notifyhotel error-notice send error', e);
+    }
+  }
+
+  return { statusCode: 200, body: 'ok' };
+}
+
 // Keeps "Joined Group" fresh between manual Sync Group Status runs -- fires
 // the moment someone actually joins, instead of only on the next check-membership sweep.
 async function handleNewChatMembers(chatId, newMembers) {
@@ -266,6 +296,9 @@ exports.handler = async (event) => {
   }
   if (/^\/launch(?:@\w+)?/.test(trimmedText)) {
     return handleLaunch(message);
+  }
+  if (/^\/notifyhotel(?:@\w+)?/.test(trimmedText)) {
+    return handleNotifyHotel(message);
   }
 
   const match = /^\/start(?:@\w+)?(?:\s+(\S+))?/.exec(trimmedText);

@@ -1,9 +1,9 @@
 const { writeRowAt, ensureHeaders, nextRegId, getAllRows, findDuplicate } = require('./lib/sheets');
 
-// Fixed hotel cost (3 nights at €35), separate from the sliding-scale
-// contribution. Derived here from the housing value instead of trusting
-// a client-sent number, since it's meant to be fixed, not adjustable.
-const HOTEL_COST = 105;
+// Fixed hotel cost (negotiated group rate, 3 nights), separate from the
+// sliding-scale contribution. Derived here from the housing value instead
+// of trusting a client-sent number, since it's meant to be fixed, not adjustable.
+const HOTEL_COST = 112;
 
 // Venue capacity. Computed live against non-waitlisted rows at submission
 // time (not a persisted counter), so it self-corrects if someone is later
@@ -87,6 +87,7 @@ exports.handler = async (event) => {
     const scores = data.scores || {};
     const submittedAt = new Date().toISOString();
     const hotelCost = housing === 'hotel' ? HOTEL_COST : '';
+    const hotelPaymentStatus = housing === 'hotel' ? 'Ausstehend' : '';
 
     const activeCount = rows.filter((r) => (r[25] || '').trim().toUpperCase() !== 'TRUE').length;
     const waitlisted = activeCount >= MAX_CAPACITY;
@@ -116,6 +117,7 @@ exports.handler = async (event) => {
         hotelCost,
         '', '', '', '', // Joined Group / Joined Checked At / Invite Sent At / Last Reminded At — unknown until later
         waitlisted ? 'TRUE' : 'FALSE',
+        '', hotelPaymentStatus, '', // Hotel Notified At / Hotel Payment Status / Hotel Last Reminded At
       ],
       rows
     );

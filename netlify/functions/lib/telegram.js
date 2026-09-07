@@ -132,6 +132,59 @@ function buildReminderMessage(entry, lang) {
   );
 }
 
+// Hotel cost/IBAN are organizer-provided copy, not env-driven bank details
+// like the general PAYMENT_* messages -- this is a separate negotiated rate
+// paid to a different recipient (Johann Aaron Krautheim, not PAYMENT_HOLDER).
+function buildHotelNotifyMessage(lang) {
+  const isDe = lang !== 'en';
+
+  if (isDe) {
+    return (
+      `Liebe Goldmünder,\n\n` +
+      `ihr gehört zu den erlauchten die sich für eine edle Unterkunft - das Hotel Maximilian entschieden haben. Wir konnten mit dem Hotel einen Deal aushandeln was es uns ermöglicht für nur einen Bruchteil des eigentlichen Preises dort zu nächtigen. Dieser Deal beläuft sich auf 112 Euro pro Person für drei Nächte (Do/Fr/Sa - eine frühere bzw. spätere Anreise ist deshalb leider möglich). Bitte überweist die 112 Euro an die Kontonummer:\n` +
+      `Johann Aaron Krautheim\n` +
+      `IBAN: BE47905243302780\n` +
+      `Verwendungszweck: „Nachname, Vorname + Kostenbeteiligung Übernachtung"\n\n` +
+      `Bitte denkt daran, dass eure Teilnahme am Goldmund ist dann als bestätigt gilt, wenn auch der Betrag für das Hotel überwiesen ist.\n\n` +
+      `Sollte es Fragen geben wendet euch gerne an Jonas (TG:@chaos2202)`
+    );
+  }
+  return (
+    `Dear Goldmünder,\n\n` +
+    `You are one of the illustrious people who have chosen noble accommodation - the Hotel Maximilian. We were able to negotiate a deal with the hotel that allowed us to stay there for just a fraction of the actual price. This deal amounts to 112 euros per person for three nights (Thurs/Fri/Sat - an earlier or later arrival is therefore unfortunately possible). Please transfer the 112 euros to the account number:\n` +
+    `Johann Aaron Krautheim\n` +
+    `IBAN: BE47905243302780\n` +
+    `Purpose: "Last name, first name + Kostenbeteiligung Übernachtung"\n\n` +
+    `Please note that your participation in Goldmund is only considered confirmed once the payment for the hotel has been transferred.\n\n` +
+    `If you have any questions, please contact Jonas (TG:@chaos2202)`
+  );
+}
+
+function buildHotelReminderMessage(lang) {
+  const isDe = lang !== 'en';
+
+  if (isDe) {
+    return (
+      `Goldmund,\n\n` +
+      `kurze Erinnerung: Deine Zahlung für die Unterkunft im Hotel Maximilian (112€, 3 Nächte) steht noch aus.\n\n` +
+      `Johann Aaron Krautheim\n` +
+      `IBAN: BE47905243302780\n` +
+      `Verwendungszweck: „Nachname, Vorname + Kostenbeteiligung Übernachtung"\n\n` +
+      `Denk daran: deine Teilnahme gilt erst als bestätigt, wenn auch die Hotelzahlung eingegangen ist.\n\n` +
+      `Fragen? Wende dich an Jonas (@chaos2202).`
+    );
+  }
+  return (
+    `Goldmund,\n\n` +
+    `quick reminder: your payment for accommodation at Hotel Maximilian (€112, 3 nights) is still outstanding.\n\n` +
+    `Johann Aaron Krautheim\n` +
+    `IBAN: BE47905243302780\n` +
+    `Purpose: "Last name, first name + Kostenbeteiligung Übernachtung"\n\n` +
+    `Remember: your participation is only confirmed once the hotel payment is received too.\n\n` +
+    `Questions? Reach out to Jonas (@chaos2202).`
+  );
+}
+
 function buildInviteMessage(groupLink, lang) {
   const isDe = lang !== 'en';
 
@@ -194,6 +247,8 @@ module.exports = {
   buildWaitlistMessage,
   buildReminderMessage,
   buildInviteMessage,
+  buildHotelNotifyMessage,
+  buildHotelReminderMessage,
   sendMessage,
   deleteMessage,
   pinChatMessage,

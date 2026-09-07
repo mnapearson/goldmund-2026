@@ -486,6 +486,8 @@
         <button class="btn" onclick="copyEmailsPaidNoChat()">Copy Emails: Paid, No Chat ID</button>
         <button class="btn" onclick="copyEmailsUnpaid()">Copy Unpaid Emails</button>
         <button class="btn" onclick="copyEmailsWaitlist()">Copy Waitlist Emails</button>
+        <button class="btn" onclick="notifyHotelGuests()">Notify Hotel Guests</button>
+        <button class="btn" onclick="remindHotelPayment()">Remind Hotel Payment</button>
         <button class="btn primary" id="sync-btn" onclick="syncSheet()">Sync Sheet</button>
         <button class="btn" id="sync-group-btn" onclick="syncGroupStatus()">Sync Group Status</button>
         <span id="sync-status" style="font-family:'Oswald',sans-serif; font-size:11px; color:#55514b;"></span>
@@ -552,7 +554,7 @@ en:[
 const HOUSING = [
   {id:"hotel", de:["Hotel Maximilian","Verschiedene Zimmertypen (Einzel-, Doppel-, Dreibettzimmer und Suiten). Frühstück ist nicht inklusive, kann aber dazu gebucht werden. Komfort, abseits vom Programm."], en:["Hotel Maximilian","Various room types (single, double, triple rooms and suites). Breakfast is not included but can be booked additionally. Comfort, away from the program."]}
 ];
-const HOTEL_COST = 105; // €35/night x 3 nights, fixed -- separate from the sliding-scale contribution
+const HOTEL_COST = 112; // negotiated group rate, 3 nights, fixed -- separate from the sliding-scale contribution
 
 const INVOLVEMENT_OPTIONS = [
   {id:"workshop", de:"Workshop geben", en:"Give a workshop"},
@@ -633,7 +635,7 @@ const T = {
        telegramBtn:"📬 Bestätigung auf Telegram erhalten", telegramNote:"Du erhältst dort außerdem eine Bestätigung und weitere Infos.",
        involvementTitle:"Wie möchtest du dich einbringen?", involvementDetailsLabel:"Erzähl uns mehr — was bringst du mit?",
        housingConfirmText:"Die Bibliothek und das Indoor-Camping sind bereits ausgebucht. Dein Platz ist im Hotel Maximilian.",
-       hotelCostLine:"Hotel Maximilian: €105 (3 Nächte à 35€)", hotelLabel:"Hotel", totalLabel:"Gesamt", totalDueLabel:"Gesamtbetrag",
+       hotelCostLine:"Hotel Maximilian: €112 (3 Nächte)", hotelLabel:"Hotel", totalLabel:"Gesamt", totalDueLabel:"Gesamtbetrag",
        bankTitle:"Zahlungsdetails:", bankIban:"IBAN", bankBic:"BIC", bankRef:"Verwendungszweck",
        bankRefValue:"„Nachname, Vorname + Kostenbeteiligung Goldmund 2026\"",
        bankCompleteNote:"Hinweis: Die Anmeldung ist erst mit Überweisung des Beitrags komplett!",
@@ -654,7 +656,7 @@ const T = {
        telegramBtn:"📬 Get confirmation on Telegram", telegramNote:"You'll also get a confirmation and further info there.",
        involvementTitle:"How would you like to contribute?", involvementDetailsLabel:"Tell us more — what will you bring?",
        housingConfirmText:"The library and indoor camping are fully booked. Your spot is at Hotel Maximilian.",
-       hotelCostLine:"Hotel Maximilian: €105 (3 nights at €35)", hotelLabel:"Hotel", totalLabel:"Total", totalDueLabel:"Total amount due",
+       hotelCostLine:"Hotel Maximilian: €112 (3 nights)", hotelLabel:"Hotel", totalLabel:"Total", totalDueLabel:"Total amount due",
        bankTitle:"Payment details:", bankIban:"IBAN", bankBic:"BIC", bankRef:"Reference",
        bankRefValue:"“Last name, first name + Goldmund 2026 contribution”",
        bankCompleteNote:"Note: Registration is only complete once the contribution has been transferred!",
@@ -1088,7 +1090,7 @@ function renderTruncatedCell(e,field,maxLen){
 }
 function renderAdminTable(){
   const th=document.querySelector('#admin-table thead'), tb=document.querySelector('#admin-table tbody'), es=document.getElementById('empty-state');
-  th.innerHTML=`<tr><th>Reg ID</th><th>Name</th><th>Email</th><th>Telegram</th><th>Housing</th><th>Contribution</th><th>Faction</th><th>M</th><th>S</th><th>R</th><th>T</th><th>K</th><th>Payment</th><th>Submitted</th><th>Contributions</th><th>Details</th><th>Action</th></tr>`;
+  th.innerHTML=`<tr><th>Reg ID</th><th>Name</th><th>Email</th><th>Telegram</th><th>Housing</th><th>Contribution</th><th>Faction</th><th>M</th><th>S</th><th>R</th><th>T</th><th>K</th><th>Payment</th><th>Hotel Payment</th><th>Submitted</th><th>Contributions</th><th>Details</th><th>Action</th></tr>`;
   if(!adminEntries.length){ tb.innerHTML=''; es.style.display='block'; return; }
   es.style.display='none';
   const sorted=[...adminEntries].sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
@@ -1100,28 +1102,35 @@ function renderAdminTable(){
     <td>€${e.contribution||0}</td><td><span class="fchip" style="background:${fac?fac.color:'#999'}">${fac?fac.en:'—'}</span></td>
     <td>${s.M||0}</td><td>${s.S||0}</td><td>${s.R||0}</td><td>${s.T||0}</td><td>${s.K||0}</td>
     <td><span class="fchip" style="background:${isPaid?'var(--brass)':'#999'}; cursor:pointer;" title="Klicken zum Umschalten" onclick="togglePayment(this,'${e.regId}','${e.paymentStatus}')">${esc(e.paymentStatus)}</span> ${e.waitlisted?`<span class="fchip" style="background:#6b6458;">Waitlist</span>`:''}</td>
+    <td>${e.housing==='Hotel Maximilian'?`<span class="fchip" style="background:${e.hotelPaymentStatus==='Bezahlt'?'var(--brass)':'#999'}; cursor:pointer;" title="Klicken zum Umschalten" onclick="toggleHotelPayment(this,'${e.regId}','${e.hotelPaymentStatus}')">${esc(e.hotelPaymentStatus||'Ausstehend')}</span>`:'—'}</td>
     <td>${e.submittedAt?new Date(e.submittedAt).toLocaleString():'—'}</td>
     <td style="white-space:normal; max-width:220px;">${renderTruncatedCell(e,'contributions',50)}</td>
     <td style="white-space:normal; max-width:280px;">${renderTruncatedCell(e,'contributionDetails',60)}</td>
     <td>${renderActionCell(e)}</td></tr>`;}).join('');
 }
 function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
-async function togglePayment(el,regId,currentStatus){
+async function togglePaymentField(el,regId,currentStatus,field,onUpdate){
   const newStatus=isPaidStatus(currentStatus)?'Ausstehend':'Bezahlt';
   const prevText=el.textContent, prevBg=el.style.background;
   el.textContent='…'; el.style.pointerEvents='none';
   try{
-    const res=await fetch('/.netlify/functions/update-status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId,status:newStatus,passphrase:adminPass})});
+    const res=await fetch('/.netlify/functions/update-status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId,status:newStatus,field,passphrase:adminPass})});
     const json=await res.json();
     if(!res.ok||!json.success) throw new Error(json.error||'failed');
     const entry=adminEntries.find(e=>e.regId===regId);
-    if(entry) entry.paymentStatus=newStatus;
+    if(entry) onUpdate(entry,newStatus);
     renderAdminTable(); renderAdminStats();
   }catch(err){
     el.textContent=prevText; el.style.background=prevBg; el.style.pointerEvents='';
     el.title='Fehler: '+(err.message||'unbekannt'); el.style.outline='1px solid var(--red)';
     setTimeout(()=>{ el.style.outline=''; },2500);
   }
+}
+function togglePayment(el,regId,currentStatus){
+  togglePaymentField(el,regId,currentStatus,'payment',(entry,newStatus)=>{ entry.paymentStatus=newStatus; });
+}
+function toggleHotelPayment(el,regId,currentStatus){
+  togglePaymentField(el,regId,currentStatus,'hotel_payment',(entry,newStatus)=>{ entry.hotelPaymentStatus=newStatus; });
 }
 async function promoteUser(regId){
   if(!confirm(`Promote ${regId} off the waitlist? They'll be sent the normal payment confirmation if they have a Telegram contact.`)) return;
@@ -1251,6 +1260,37 @@ function copyEmailsUnpaid(){
 }
 function copyEmailsWaitlist(){
   copyEmails(e=>e.waitlisted, 'Waitlist');
+}
+async function runHotelAction(url,progressText,successText){
+  const prog=document.getElementById('bulk-progress');
+  prog.textContent=progressText;
+  try{
+    const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({passphrase:adminPass})});
+    const json=await res.json();
+    if(!res.ok||!json.success) throw new Error(json.error||'failed');
+    prog.textContent=successText(json);
+    await loadAdmin();
+  }catch(err){
+    prog.textContent='Error: '+(err.message||'unknown');
+  }
+  setTimeout(()=>{ prog.textContent=''; },6000);
+}
+function notifyHotelGuests(){
+  const hotelGuests=adminEntries.filter(e=>e.housing==='Hotel Maximilian');
+  const eligible=hotelGuests.filter(e=>e.telegramChatId&&!e.hotelNotifiedAt);
+  const alreadyNotified=hotelGuests.filter(e=>e.hotelNotifiedAt);
+  const noChatId=hotelGuests.filter(e=>!e.telegramChatId&&!e.hotelNotifiedAt);
+  const breakdown=`${eligible.length} will be notified now · ${alreadyNotified.length} already notified (skipped) · ${noChatId.length} no Chat ID (need manual email).`;
+  if(!eligible.length){ alert(`No one to notify right now.\n\n${breakdown}`); return; }
+  if(!confirm(`${breakdown}\n\nProceed?`)) return;
+  runHotelAction('/.netlify/functions/notify-hotel','Notifying hotel guests…',(json)=>`Done: ${json.sentTo} notified (${json.alreadyNotified} already were).`);
+}
+function remindHotelPayment(){
+  const hotelGuests=adminEntries.filter(e=>e.housing==='Hotel Maximilian');
+  const eligible=hotelGuests.filter(e=>e.telegramChatId&&e.hotelNotifiedAt&&e.hotelPaymentStatus!=='Bezahlt'&&!withinCooldown(e.hotelLastRemindedAt,3));
+  if(!eligible.length){ alert('No one to remind right now (nobody eligible: already paid, not yet notified, no Chat ID, or reminded recently).'); return; }
+  if(!confirm(`${eligible.length} hotel guest(s) will be reminded now.\n\nProceed?`)) return;
+  runHotelAction('/.netlify/functions/remind-hotel','Sending hotel payment reminders…',(json)=>`Done: ${json.sentTo} reminded.`);
 }
 async function syncSheet(){
   const btn=document.getElementById('sync-btn'), status=document.getElementById('sync-status');

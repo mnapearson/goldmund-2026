@@ -1,6 +1,10 @@
 const { findRowByRegId, updateCell } = require('./lib/sheets');
 
 const VALID_STATUSES = ['Bezahlt', 'Ausstehend'];
+// "payment" = general contribution (Payment Status, col O).
+// "hotel_payment" = the separate Hotel Maximilian charge (Hotel Payment
+// Status, col AB) -- distinct toggle, distinct column, same values.
+const FIELD_COLUMNS = { payment: 'O', hotel_payment: 'AB' };
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -18,6 +22,7 @@ exports.handler = async (event) => {
     return { statusCode: 401, body: JSON.stringify({ error: 'Incorrect passphrase' }) };
   }
 
+  const field = FIELD_COLUMNS[data.field] ? data.field : 'payment';
   if (!data.regId || !VALID_STATUSES.includes(data.status)) {
     return { statusCode: 400, body: JSON.stringify({ error: 'regId and a valid status ("Bezahlt" or "Ausstehend") are required' }) };
   }
@@ -28,9 +33,9 @@ exports.handler = async (event) => {
       return { statusCode: 404, body: JSON.stringify({ error: 'Registration not found' }) };
     }
 
-    await updateCell(found.rowNumber, 'O', data.status);
+    await updateCell(found.rowNumber, FIELD_COLUMNS[field], data.status);
 
-    return { statusCode: 200, body: JSON.stringify({ success: true, regId: data.regId, status: data.status }) };
+    return { statusCode: 200, body: JSON.stringify({ success: true, regId: data.regId, status: data.status, field }) };
   } catch (err) {
     console.error('update-status error', err);
     return { statusCode: 500, body: JSON.stringify({ error: 'Could not update payment status.' }) };

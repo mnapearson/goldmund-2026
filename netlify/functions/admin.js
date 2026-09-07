@@ -29,6 +29,9 @@ function toEntry(r) {
     inviteSentAt: r[23] || '',
     lastRemindedAt: r[24] || '',
     waitlisted: r[25] === 'TRUE',
+    hotelNotifiedAt: r[26] || '',
+    hotelPaymentStatus: r[27] || '',
+    hotelLastRemindedAt: r[28] || '',
   };
 }
 
