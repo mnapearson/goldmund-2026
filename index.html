@@ -486,6 +486,7 @@
         <button class="btn" onclick="copyEmailsPaidNoChat()">Copy Emails: Paid, No Chat ID</button>
         <button class="btn" onclick="copyEmailsUnpaid()">Copy Unpaid Emails</button>
         <button class="btn" onclick="copyEmailsWaitlist()">Copy Waitlist Emails</button>
+        <button class="btn" onclick="copyEmailsHotelNoChat()">Copy Hotel Emails: No Chat ID</button>
         <button class="btn" onclick="notifyHotelGuests()">Notify Hotel Guests</button>
         <button class="btn" onclick="remindHotelPayment()">Remind Hotel Payment</button>
         <button class="btn primary" id="sync-btn" onclick="syncSheet()">Sync Sheet</button>
@@ -1260,6 +1261,9 @@ function copyEmailsUnpaid(){
 }
 function copyEmailsWaitlist(){
   copyEmails(e=>e.waitlisted, 'Waitlist');
+}
+function copyEmailsHotelNoChat(){
+  copyEmails(e=>e.housing==='Hotel Maximilian'&&!e.telegramChatId, 'Hotel Maximilian, no Chat ID');
 }
 async function runHotelAction(url,progressText,successText){
   const prog=document.getElementById('bulk-progress');
