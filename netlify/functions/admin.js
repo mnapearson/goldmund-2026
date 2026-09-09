@@ -32,6 +32,7 @@ function toEntry(r) {
     hotelNotifiedAt: r[26] || '',
     hotelPaymentStatus: r[27] || '',
     hotelLastRemindedAt: r[28] || '',
+    cancelled: r[29] === 'TRUE',
   };
 }
 

@@ -17,6 +17,7 @@ async function runHotelNotify() {
   const hotelRows = [];
   for (let i = 0; i < rows.length; i++) {
     if ((rows[i][6] || '') !== HOTEL_HOUSING) continue;
+    if (rows[i][29] === 'TRUE') continue; // cancelled -- not coming, no hotel payment to chase
     hotelRows.push({ rowNumber: i + 2, row: rows[i] });
   }
 

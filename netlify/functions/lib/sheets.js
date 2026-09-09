@@ -1,14 +1,15 @@
 const { google } = require('googleapis');
 
 const SHEET_NAME = 'Registrations';
-// Data-write range (writeRowAt) covers A:AC -- unlike group-membership/invite
+// Data-write range (writeRowAt) covers A:AD -- unlike group-membership/invite
 // history (V-Y), which is genuinely unknown until later functions fill it
-// in, Waitlisted (Z) and Hotel Payment Status (AB) ARE known at signup time
-// (computed from housing/capacity), so they're written alongside the rest
-// of the row; Hotel Notified At (AA) and Hotel Last Reminded At (AC) stay
-// blank until notify-hotel.js / remind-hotel.js fill them in.
-const DATA_RANGE = `${SHEET_NAME}!A2:AC`;
-const HEADER_RANGE = `${SHEET_NAME}!A1:AC1`;
+// in, Waitlisted (Z), Hotel Payment Status (AB), and Cancelled (AD) ARE
+// known at signup time (computed from housing/capacity, or defaulted
+// false), so they're written alongside the rest of the row; Hotel Notified
+// At (AA) and Hotel Last Reminded At (AC) stay blank until notify-hotel.js
+// / remind-hotel.js fill them in.
+const DATA_RANGE = `${SHEET_NAME}!A2:AD`;
+const HEADER_RANGE = `${SHEET_NAME}!A1:AD1`;
 const HEADERS = [
   'Reg ID', 'Name', 'Email', 'Telegram', 'Phone', 'Arrival', 'Housing', 'Contribution (€)',
   'Top Faction', 'M', 'S', 'R', 'T', 'K', 'Payment Status', 'Submitted At', 'Telegram Chat ID', 'Language',
@@ -16,6 +17,7 @@ const HEADERS = [
   'Joined Group', 'Joined Checked At', 'Invite Sent At', 'Last Reminded At',
   'Waitlisted',
   'Hotel Notified At', 'Hotel Payment Status', 'Hotel Last Reminded At',
+  'Cancelled',
 ];
 
 let sheetsClient = null;
@@ -77,7 +79,7 @@ async function writeRowAt(rowNumber, row) {
   const sheets = await getSheets();
   await sheets.spreadsheets.values.update({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A${rowNumber}:AC${rowNumber}`,
+    range: `${SHEET_NAME}!A${rowNumber}:AD${rowNumber}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });

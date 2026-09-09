@@ -1031,49 +1031,57 @@ async function loadAdmin(){
 function renderAdminStats(){
   const w=document.getElementById('admin-stats'); const total=adminEntries.length; const sum=adminEntries.reduce((a,e)=>a+(e.contribution||0),0);
   const paid=adminEntries.filter(e=>isPaidStatus(e.paymentStatus)).length;
-  const activeCount=adminEntries.filter(e=>!e.waitlisted).length;
-  const waitlistCount=adminEntries.filter(e=>e.waitlisted).length;
+  const activeCount=adminEntries.filter(e=>!e.waitlisted&&!e.cancelled).length;
+  const waitlistCount=adminEntries.filter(e=>e.waitlisted&&!e.cancelled).length;
+  const cancelledEntries=adminEntries.filter(e=>e.cancelled);
+  const needsRefund=cancelledEntries.filter(e=>isPaidStatus(e.paymentStatus)||e.hotelPaymentStatus==='Bezahlt').length;
   const fc={M:0,S:0,R:0,T:0,K:0}; adminEntries.forEach(e=>{if(e.topFaction)fc[e.topFaction]++;});
   w.innerHTML=`<div class="stat-card"><div class="num">${total}</div><div class="lab">Registrations</div></div>
     <div class="stat-card"><div class="num">€${sum}</div><div class="lab">Pledged</div></div>
     <div class="stat-card"><div class="num">${paid}/${total}</div><div class="lab">Paid</div></div>
     <div class="stat-card"><div class="num">${activeCount}/110</div><div class="lab">Capacity</div></div>
     <div class="stat-card"><div class="num">${waitlistCount}</div><div class="lab">Waitlist</div></div>
+    <div class="stat-card"><div class="num">${cancelledEntries.length}</div><div class="lab">Cancelled</div></div>
+    <div class="stat-card"${needsRefund?' style="outline:2px solid var(--red);"':''}><div class="num">${needsRefund}</div><div class="lab">Needs Refund</div></div>
     ${Object.keys(FACTIONS).map(f=>`<div class="stat-card"><div class="num">${fc[f]}</div><div class="lab">${FACTIONS[f].en}</div></div>`).join('')}`;
 
   const fw=document.getElementById('admin-stats-funnel');
-  const invitedAwaitingJoin=adminEntries.filter(e=>e.inviteSentAt&&!e.joinedGroup).length;
-  const joinedGroupCount=adminEntries.filter(e=>e.joinedGroup).length;
-  fw.innerHTML=`<div class="stat-card"><div class="num">${total}</div><div class="lab">Registered</div></div>
+  const invitedAwaitingJoin=adminEntries.filter(e=>e.inviteSentAt&&!e.joinedGroup&&!e.cancelled).length;
+  const joinedGroupCount=adminEntries.filter(e=>e.joinedGroup&&!e.cancelled).length;
+  fw.innerHTML=`<div class="stat-card"><div class="num">${activeCount}</div><div class="lab">Registered</div></div>
     <div class="stat-card"><div class="num">${paid}</div><div class="lab">Paid</div></div>
     <div class="stat-card"><div class="num">${invitedAwaitingJoin}</div><div class="lab">Invited (awaiting join)</div></div>
     <div class="stat-card"><div class="num">${joinedGroupCount}</div><div class="lab">Joined Group</div></div>`;
 }
 function renderActionCell(e){
+  if(e.cancelled){
+    return `<button class="btn" disabled style="padding:5px 10px; font-size:10px; opacity:.5;">Cancelled</button> <span class="read-more-btn" onclick="toggleCancelled('${e.regId}',false)">Un-cancel</span>`;
+  }
+  const cancelLink=`<span class="read-more-btn" onclick="toggleCancelled('${e.regId}',true)">Cancel</span>`;
   if(e.waitlisted){
-    return `<button class="btn" style="padding:5px 10px; font-size:10px;" onclick="promoteUser('${e.regId}')">Promote</button>`;
+    return `<button class="btn" style="padding:5px 10px; font-size:10px;" onclick="promoteUser('${e.regId}')">Promote</button> ${cancelLink}`;
   }
   const isPaid=isPaidStatus(e.paymentStatus);
   if(isPaid){
     if(e.joinedGroup){
-      return `<button class="btn" disabled style="padding:5px 10px; font-size:10px; opacity:.5;">Joined ✓</button>`;
+      return `<button class="btn" disabled style="padding:5px 10px; font-size:10px; opacity:.5;">Joined ✓</button> ${cancelLink}`;
     }
     if(!e.telegramChatId){
-      return `<button class="btn" disabled title="Kein Telegram-Kontakt" style="padding:5px 10px; font-size:10px;">Send Invite</button>`;
+      return `<button class="btn" disabled title="Kein Telegram-Kontakt" style="padding:5px 10px; font-size:10px;">Send Invite</button> ${cancelLink}`;
     }
     if(withinCooldown(e.inviteSentAt,3)){
-      return `<button class="btn" disabled title="Invited ${new Date(e.inviteSentAt).toLocaleString()}" style="padding:5px 10px; font-size:10px; opacity:.5;">Sent ✓</button>`;
+      return `<button class="btn" disabled title="Invited ${new Date(e.inviteSentAt).toLocaleString()}" style="padding:5px 10px; font-size:10px; opacity:.5;">Sent ✓</button> ${cancelLink}`;
     }
     const label=e.inviteSentAt?'Re-invite':'Send Invite';
-    return `<button class="btn" style="padding:5px 10px; font-size:10px;" onclick="sendInvite('${e.regId}')">${label}</button>`;
+    return `<button class="btn" style="padding:5px 10px; font-size:10px;" onclick="sendInvite('${e.regId}')">${label}</button> ${cancelLink}`;
   }
   if(!e.telegramChatId){
-    return `<button class="btn" disabled title="Kein Telegram-Kontakt" style="padding:5px 10px; font-size:10px;">Remind</button>`;
+    return `<button class="btn" disabled title="Kein Telegram-Kontakt" style="padding:5px 10px; font-size:10px;">Remind</button> ${cancelLink}`;
   }
   if(withinCooldown(e.lastRemindedAt,3)){
-    return `<button class="btn" disabled title="Reminded ${new Date(e.lastRemindedAt).toLocaleString()}" style="padding:5px 10px; font-size:10px; opacity:.5;">Sent ✓</button>`;
+    return `<button class="btn" disabled title="Reminded ${new Date(e.lastRemindedAt).toLocaleString()}" style="padding:5px 10px; font-size:10px; opacity:.5;">Sent ✓</button> ${cancelLink}`;
   }
-  return `<button class="btn" style="padding:5px 10px; font-size:10px;" onclick="remindUser('${e.regId}')">Remind</button>`;
+  return `<button class="btn" style="padding:5px 10px; font-size:10px;" onclick="remindUser('${e.regId}')">Remind</button> ${cancelLink}`;
 }
 function toggleDetailsExpand(key){
   if(expandedDetails.has(key)) expandedDetails.delete(key); else expandedDetails.add(key);
@@ -1096,10 +1104,11 @@ function renderAdminTable(){
   es.style.display='none';
   const sorted=[...adminEntries].sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
   tb.innerHTML=sorted.map(e=>{ const s=e.scores||{}; const fac=e.topFaction&&FACTIONS[e.topFaction]; const isPaid=isPaidStatus(e.paymentStatus);
-    const rowStyle=e.waitlisted?' style="background:rgba(107,100,88,.10);"':(isPaid?' style="background:rgba(169,133,47,.08);"':'');
-    const firstCellStyle=e.waitlisted?' style="border-left:3px solid #6b6458;"':(isPaid?' style="border-left:3px solid var(--brass);"':'');
+    const rowStyle=e.cancelled?' style="background:rgba(184,32,42,.06); opacity:.6;"':(e.waitlisted?' style="background:rgba(107,100,88,.10);"':(isPaid?' style="background:rgba(169,133,47,.08);"':''));
+    const firstCellStyle=e.cancelled?' style="border-left:3px solid var(--red);"':(e.waitlisted?' style="border-left:3px solid #6b6458;"':(isPaid?' style="border-left:3px solid var(--brass);"':''));
+    const nameStyle=e.cancelled?' style="text-decoration:line-through;"':'';
     return `<tr${rowStyle}>
-    <td${firstCellStyle}>${esc(e.regId)}</td><td>${esc(e.name)}</td><td>${esc(e.email)}</td><td>${esc(e.telegram)}</td><td>${esc(e.housing)}</td>
+    <td${firstCellStyle}>${esc(e.regId)}</td><td${nameStyle}>${esc(e.name)}</td><td>${esc(e.email)}</td><td>${esc(e.telegram)}</td><td>${esc(e.housing)}</td>
     <td>€${e.contribution||0}</td><td><span class="fchip" style="background:${fac?fac.color:'#999'}">${fac?fac.en:'—'}</span></td>
     <td>${s.M||0}</td><td>${s.S||0}</td><td>${s.R||0}</td><td>${s.T||0}</td><td>${s.K||0}</td>
     <td><span class="fchip" style="background:${isPaid?'var(--brass)':'#999'}; cursor:pointer;" title="Klicken zum Umschalten" onclick="togglePayment(this,'${e.regId}','${e.paymentStatus}')">${esc(e.paymentStatus)}</span> ${e.waitlisted?`<span class="fchip" style="background:#6b6458;">Waitlist</span>`:''}</td>
@@ -1132,6 +1141,24 @@ function togglePayment(el,regId,currentStatus){
 }
 function toggleHotelPayment(el,regId,currentStatus){
   togglePaymentField(el,regId,currentStatus,'hotel_payment',(entry,newStatus)=>{ entry.hotelPaymentStatus=newStatus; });
+}
+async function toggleCancelled(regId,cancelled){
+  const entry=adminEntries.find(x=>x.regId===regId);
+  const label=entry?entry.name:regId;
+  const confirmMsg=cancelled
+    ? `Mark ${label} (${regId}) as cancelled? They'll be excluded from capacity, bulk sends, and hotel outreach. This is reversible.`
+    : `Un-cancel ${label} (${regId})? They'll count toward capacity again.`;
+  if(!confirm(confirmMsg)) return;
+  try{
+    const res=await fetch('/.netlify/functions/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId,cancelled,passphrase:adminPass})});
+    const json=await res.json();
+    if(!res.ok||!json.success) throw new Error(json.error||'failed');
+    if(entry) entry.cancelled=cancelled;
+    renderAdminTable(); renderAdminStats();
+    if(cancelled&&(isPaidStatus(entry&&entry.paymentStatus)||(entry&&entry.hotelPaymentStatus==='Bezahlt'))){
+      alert(`${regId} was marked cancelled but had a payment on file — check the "Needs Refund" count and arrange a refund manually.`);
+    }
+  }catch(err){ alert('Could not update cancellation status: '+(err.message||'unknown error')); }
 }
 async function promoteUser(regId){
   if(!confirm(`Promote ${regId} off the waitlist? They'll be sent the normal payment confirmation if they have a Telegram contact.`)) return;
@@ -1180,7 +1207,7 @@ async function sendInvite(regId){
   }catch(e){ alert('Could not reach the invite function.'); }
 }
 async function bulkRemind(){
-  const unpaid=adminEntries.filter(e=>!isPaidStatus(e.paymentStatus)&&!e.waitlisted);
+  const unpaid=adminEntries.filter(e=>!isPaidStatus(e.paymentStatus)&&!e.waitlisted&&!e.cancelled);
   const noChatId=unpaid.filter(e=>!e.telegramChatId);
   const recentlyReminded=unpaid.filter(e=>e.telegramChatId&&withinCooldown(e.lastRemindedAt,3));
   const targets=unpaid.filter(e=>e.telegramChatId&&!withinCooldown(e.lastRemindedAt,3));
@@ -1205,7 +1232,7 @@ async function bulkRemind(){
 }
 async function bulkInvite(){
   if(!groupLink){ alert('Paste the Telegram group link first.'); return; }
-  const paid=adminEntries.filter(e=>isPaidStatus(e.paymentStatus)&&!e.waitlisted);
+  const paid=adminEntries.filter(e=>isPaidStatus(e.paymentStatus)&&!e.waitlisted&&!e.cancelled);
   const noChatId=paid.filter(e=>!e.telegramChatId);
   const alreadyJoined=paid.filter(e=>e.telegramChatId&&e.joinedGroup);
   const recentlyInvited=paid.filter(e=>e.telegramChatId&&!e.joinedGroup&&withinCooldown(e.inviteSentAt,3));
@@ -1254,16 +1281,16 @@ async function copyEmails(filterFn,label){
   }
 }
 function copyEmailsPaidNoChat(){
-  copyEmails(e=>isPaidStatus(e.paymentStatus)&&!e.telegramChatId, 'Paid, no Chat ID');
+  copyEmails(e=>isPaidStatus(e.paymentStatus)&&!e.telegramChatId&&!e.cancelled, 'Paid, no Chat ID');
 }
 function copyEmailsUnpaid(){
-  copyEmails(e=>!isPaidStatus(e.paymentStatus)&&!e.telegramChatId, 'Unpaid, no Chat ID');
+  copyEmails(e=>!isPaidStatus(e.paymentStatus)&&!e.telegramChatId&&!e.cancelled, 'Unpaid, no Chat ID');
 }
 function copyEmailsWaitlist(){
-  copyEmails(e=>e.waitlisted, 'Waitlist');
+  copyEmails(e=>e.waitlisted&&!e.cancelled, 'Waitlist');
 }
 function copyEmailsHotelNoChat(){
-  copyEmails(e=>e.housing==='Hotel Maximilian'&&!e.telegramChatId, 'Hotel Maximilian, no Chat ID');
+  copyEmails(e=>e.housing==='Hotel Maximilian'&&!e.telegramChatId&&!e.cancelled, 'Hotel Maximilian, no Chat ID');
 }
 async function runHotelAction(url,progressText,successText){
   const prog=document.getElementById('bulk-progress');
@@ -1280,7 +1307,7 @@ async function runHotelAction(url,progressText,successText){
   setTimeout(()=>{ prog.textContent=''; },6000);
 }
 function notifyHotelGuests(){
-  const hotelGuests=adminEntries.filter(e=>e.housing==='Hotel Maximilian');
+  const hotelGuests=adminEntries.filter(e=>e.housing==='Hotel Maximilian'&&!e.cancelled);
   const eligible=hotelGuests.filter(e=>e.telegramChatId&&!e.hotelNotifiedAt);
   const alreadyNotified=hotelGuests.filter(e=>e.hotelNotifiedAt);
   const noChatId=hotelGuests.filter(e=>!e.telegramChatId&&!e.hotelNotifiedAt);
@@ -1290,7 +1317,7 @@ function notifyHotelGuests(){
   runHotelAction('/.netlify/functions/notify-hotel','Notifying hotel guests…',(json)=>`Done: ${json.sentTo} notified (${json.alreadyNotified} already were).`);
 }
 function remindHotelPayment(){
-  const hotelGuests=adminEntries.filter(e=>e.housing==='Hotel Maximilian');
+  const hotelGuests=adminEntries.filter(e=>e.housing==='Hotel Maximilian'&&!e.cancelled);
   const eligible=hotelGuests.filter(e=>e.telegramChatId&&e.hotelNotifiedAt&&e.hotelPaymentStatus!=='Bezahlt'&&!withinCooldown(e.hotelLastRemindedAt,3));
   if(!eligible.length){ alert('No one to remind right now (nobody eligible: already paid, not yet notified, no Chat ID, or reminded recently).'); return; }
   if(!confirm(`${eligible.length} hotel guest(s) will be reminded now.\n\nProceed?`)) return;

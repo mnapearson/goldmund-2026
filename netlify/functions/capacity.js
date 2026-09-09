@@ -13,8 +13,8 @@ exports.handler = async (event) => {
 
   try {
     const rows = await getAllRows();
-    const activeCount = rows.filter((r) => (r[25] || '').trim().toUpperCase() !== 'TRUE').length;
-    const waitlistCount = rows.length - activeCount;
+    const activeCount = rows.filter((r) => (r[25] || '').trim().toUpperCase() !== 'TRUE' && (r[29] || '').trim().toUpperCase() !== 'TRUE').length;
+    const waitlistCount = rows.filter((r) => (r[25] || '').trim().toUpperCase() === 'TRUE' && (r[29] || '').trim().toUpperCase() !== 'TRUE').length;
 
     return {
       statusCode: 200,

@@ -39,6 +39,7 @@ exports.handler = async (event) => {
     for (let i = 0; i < rows.length; i++) {
       const chatId = rows[i][16] || '';
       if (!chatId) continue;
+      if (rows[i][29] === 'TRUE') continue; // cancelled -- not coming, no reason to check
       candidates.push({ rowNumber: i + 2, chatId, checkedAt: rows[i][22] || '' });
     }
     // Never-checked (empty) and stalest-checked rows first, so repeated

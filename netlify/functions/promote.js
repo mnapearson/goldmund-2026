@@ -42,6 +42,9 @@ exports.handler = async (event) => {
     if (found.row[25] !== 'TRUE') {
       return { statusCode: 409, body: JSON.stringify({ ok: false, error: 'This registration is not on the waitlist.' }) };
     }
+    if (found.row[29] === 'TRUE') {
+      return { statusCode: 409, body: JSON.stringify({ ok: false, error: 'This registration was cancelled -- un-cancel it first if they still want to come.' }) };
+    }
 
     await updateCell(found.rowNumber, 'Z', 'FALSE');
 

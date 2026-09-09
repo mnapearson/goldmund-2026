@@ -39,6 +39,7 @@ exports.handler = async (event) => {
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       if ((row[6] || '') !== HOTEL_HOUSING) continue;
+      if (row[29] === 'TRUE') continue; // cancelled -- not coming, no hotel payment to chase
       if (!row[16]) continue; // no Telegram Chat ID
       if (!row[26]) continue; // not yet notified about the hotel payment
       if ((row[27] || '').trim() === 'Bezahlt') continue; // hotel payment already made

@@ -5,10 +5,10 @@ const { writeRowAt, ensureHeaders, nextRegId, getAllRows, findDuplicate } = requ
 // of trusting a client-sent number, since it's meant to be fixed, not adjustable.
 const HOTEL_COST = 112;
 
-// Venue capacity. Computed live against non-waitlisted rows at submission
-// time (not a persisted counter), so it self-corrects if someone is later
-// removed from the sheet or promoted off the waitlist -- the 111th active
-// signup always lands on the waitlist, whichever row number that turns out to be.
+// Venue capacity. Computed live against non-waitlisted, non-cancelled rows
+// at submission time (not a persisted counter), so it self-corrects as
+// people are promoted off the waitlist or cancel -- a cancellation frees a
+// real spot immediately, without needing a manual capacity adjustment.
 const MAX_CAPACITY = 110;
 
 function bankBlock() {
@@ -89,7 +89,7 @@ exports.handler = async (event) => {
     const hotelCost = housing === 'hotel' ? HOTEL_COST : '';
     const hotelPaymentStatus = housing === 'hotel' ? 'Ausstehend' : '';
 
-    const activeCount = rows.filter((r) => (r[25] || '').trim().toUpperCase() !== 'TRUE').length;
+    const activeCount = rows.filter((r) => (r[25] || '').trim().toUpperCase() !== 'TRUE' && (r[29] || '').trim().toUpperCase() !== 'TRUE').length;
     const waitlisted = activeCount >= MAX_CAPACITY;
 
     const regId = await writeRegistrationRow(
@@ -118,6 +118,7 @@ exports.handler = async (event) => {
         '', '', '', '', // Joined Group / Joined Checked At / Invite Sent At / Last Reminded At — unknown until later
         waitlisted ? 'TRUE' : 'FALSE',
         '', hotelPaymentStatus, '', // Hotel Notified At / Hotel Payment Status / Hotel Last Reminded At
+        'FALSE', // Cancelled
       ],
       rows
     );
