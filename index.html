@@ -1034,7 +1034,7 @@ function renderAdminStats(){
   const activeCount=adminEntries.filter(e=>!e.waitlisted&&!e.cancelled).length;
   const waitlistCount=adminEntries.filter(e=>e.waitlisted&&!e.cancelled).length;
   const cancelledEntries=adminEntries.filter(e=>e.cancelled);
-  const needsRefund=cancelledEntries.filter(e=>isPaidStatus(e.paymentStatus)||e.hotelPaymentStatus==='Bezahlt').length;
+  const needsRefund=adminEntries.filter(e=>e.needsRefund).length;
   const fc={M:0,S:0,R:0,T:0,K:0}; adminEntries.forEach(e=>{if(e.topFaction)fc[e.topFaction]++;});
   w.innerHTML=`<div class="stat-card"><div class="num">${total}</div><div class="lab">Registrations</div></div>
     <div class="stat-card"><div class="num">€${sum}</div><div class="lab">Pledged</div></div>
@@ -1055,7 +1055,9 @@ function renderAdminStats(){
 }
 function renderActionCell(e){
   if(e.cancelled){
-    return `<button class="btn" disabled style="padding:5px 10px; font-size:10px; opacity:.5;">Cancelled</button> <span class="read-more-btn" onclick="toggleCancelled('${e.regId}',false)">Un-cancel</span>`;
+    const wasPaid=isPaidStatus(e.paymentStatus)||e.hotelPaymentStatus==='Bezahlt';
+    const refundChip=wasPaid?`<span class="fchip" style="background:${e.needsRefund?'var(--red)':'#999'}; cursor:pointer;" title="Klicken zum Umschalten" onclick="toggleNeedsRefund('${e.regId}',${!e.needsRefund})">${e.needsRefund?'Needs Refund':'Refunded'}</span>`:'';
+    return `<button class="btn" disabled style="padding:5px 10px; font-size:10px; opacity:.5;">Cancelled</button> <span class="read-more-btn" onclick="toggleCancelled('${e.regId}',false)">Un-cancel</span> ${refundChip}`;
   }
   const cancelLink=`<span class="read-more-btn" onclick="toggleCancelled('${e.regId}',true)">Cancel</span>`;
   if(e.waitlisted){
@@ -1153,12 +1155,26 @@ async function toggleCancelled(regId,cancelled){
     const res=await fetch('/.netlify/functions/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId,cancelled,passphrase:adminPass})});
     const json=await res.json();
     if(!res.ok||!json.success) throw new Error(json.error||'failed');
-    if(entry) entry.cancelled=cancelled;
+    if(entry){ entry.cancelled=cancelled; entry.needsRefund=json.needsRefund; }
     renderAdminTable(); renderAdminStats();
-    if(cancelled&&(isPaidStatus(entry&&entry.paymentStatus)||(entry&&entry.hotelPaymentStatus==='Bezahlt'))){
-      alert(`${regId} was marked cancelled but had a payment on file — check the "Needs Refund" count and arrange a refund manually.`);
+    if(json.needsRefund){
+      alert(`${regId} was marked cancelled but had a payment on file — flagged in "Needs Refund". Clear it once you've sent the refund.`);
     }
   }catch(err){ alert('Could not update cancellation status: '+(err.message||'unknown error')); }
+}
+async function toggleNeedsRefund(regId,needsRefund){
+  const confirmMsg=needsRefund
+    ? `Re-flag ${regId} as needing a refund?`
+    : `Mark ${regId}'s refund as sent? This clears the "Needs Refund" flag.`;
+  if(!confirm(confirmMsg)) return;
+  try{
+    const res=await fetch('/.netlify/functions/refund',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId,needsRefund,passphrase:adminPass})});
+    const json=await res.json();
+    if(!res.ok||!json.success) throw new Error(json.error||'failed');
+    const entry=adminEntries.find(x=>x.regId===regId);
+    if(entry) entry.needsRefund=needsRefund;
+    renderAdminTable(); renderAdminStats();
+  }catch(err){ alert('Could not update refund status: '+(err.message||'unknown error')); }
 }
 async function promoteUser(regId){
   if(!confirm(`Promote ${regId} off the waitlist? They'll be sent the normal payment confirmation if they have a Telegram contact.`)) return;

@@ -33,6 +33,7 @@ function toEntry(r) {
     hotelPaymentStatus: r[27] || '',
     hotelLastRemindedAt: r[28] || '',
     cancelled: r[29] === 'TRUE',
+    needsRefund: r[30] === 'TRUE',
   };
 }
 

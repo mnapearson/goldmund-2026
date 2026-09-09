@@ -118,7 +118,7 @@ exports.handler = async (event) => {
         '', '', '', '', // Joined Group / Joined Checked At / Invite Sent At / Last Reminded At — unknown until later
         waitlisted ? 'TRUE' : 'FALSE',
         '', hotelPaymentStatus, '', // Hotel Notified At / Hotel Payment Status / Hotel Last Reminded At
-        'FALSE', // Cancelled
+        'FALSE', 'FALSE', // Cancelled / Needs Refund
       ],
       rows
     );

@@ -1,4 +1,4 @@
-const { findRowByRegId, updateCell } = require('./lib/sheets');
+const { findRowByRegId, batchUpdateCells } = require('./lib/sheets');
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -28,11 +28,20 @@ exports.handler = async (event) => {
 
     // Reversible on purpose -- pass cancelled:false to undo a misclick.
     // Doesn't touch Payment Status or Hotel Payment Status, so whatever was
-    // paid stays visible as the "needs refund" signal after cancelling.
+    // paid stays on record as history -- Needs Refund (a separate flag) is
+    // the actual "still owe them money" worklist, cleared manually once the
+    // refund is actually sent (see refund.js), independent of that history.
     const cancelled = data.cancelled !== false;
-    await updateCell(found.rowNumber, 'AD', cancelled ? 'TRUE' : 'FALSE');
+    const row = found.row;
+    const wasPaid = (row[14] || '').trim() === 'Bezahlt' || (row[27] || '').trim() === 'Bezahlt';
+    const needsRefund = cancelled && wasPaid;
 
-    return { statusCode: 200, body: JSON.stringify({ success: true, regId: data.regId, cancelled }) };
+    await batchUpdateCells([
+      { rowNumber: found.rowNumber, colLetter: 'AD', value: cancelled ? 'TRUE' : 'FALSE' },
+      { rowNumber: found.rowNumber, colLetter: 'AE', value: needsRefund ? 'TRUE' : 'FALSE' },
+    ]);
+
+    return { statusCode: 200, body: JSON.stringify({ success: true, regId: data.regId, cancelled, needsRefund }) };
   } catch (err) {
     console.error('cancel error', err);
     return { statusCode: 500, body: JSON.stringify({ success: false, error: 'Could not update cancellation status.' }) };
