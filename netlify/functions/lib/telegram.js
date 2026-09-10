@@ -185,6 +185,22 @@ function buildHotelReminderMessage(lang) {
   );
 }
 
+// Returns {text, replyMarkup} rather than just text, since the inline
+// keyboard's callback_data needs the regId baked in per-recipient.
+function buildArrivalChangeMessage(regId, lang) {
+  const isDe = lang !== 'en';
+  const text = isDe
+    ? `Goldmund,\n\nkurzes wichtiges Update: Wir brauchen tatsächlich alle bereits am Donnerstag bis 20:00 Uhr vor Ort — eine Anreise erst am Freitag ist leider nicht möglich.\n\nSchaffst du es, bis Donnerstag 20:00 Uhr da zu sein?`
+    : `Goldmund,\n\nquick important update: we actually need everyone on-site by Thursday 20:00 — arriving Friday instead isn't possible after all.\n\nCan you make it there by Thursday 20:00?`;
+  const replyMarkup = {
+    inline_keyboard: [[
+      { text: isDe ? '✅ Ja, ich schaffe das' : '✅ Yes, I can make it', callback_data: `arrival_yes:${regId}` },
+      { text: isDe ? '❌ Nein, das schaffe ich nicht' : "❌ No, I can't", callback_data: `arrival_no:${regId}` },
+    ]],
+  };
+  return { text, replyMarkup };
+}
+
 function buildInviteMessage(groupLink, lang) {
   const isDe = lang !== 'en';
 
@@ -242,6 +258,19 @@ async function getChatMember(chatId, userId) {
   return callTelegramApi('getChatMember', { chat_id: chatId, user_id: userId });
 }
 
+// Clears the loading spinner on the tapped button. text is an optional
+// small toast Telegram shows the user -- not used here since a real
+// follow-up message covers the confirmation.
+async function answerCallbackQuery(callbackQueryId, text) {
+  return callTelegramApi('answerCallbackQuery', Object.assign({ callback_query_id: callbackQueryId }, text ? { text } : {}));
+}
+
+// Strips the inline keyboard off an already-sent message (pass an empty
+// inline_keyboard) so a tapped button can't be tapped again.
+async function editMessageReplyMarkup(chatId, messageId, replyMarkup) {
+  return callTelegramApi('editMessageReplyMarkup', { chat_id: chatId, message_id: messageId, reply_markup: replyMarkup });
+}
+
 module.exports = {
   buildConfirmationMessage,
   buildWaitlistMessage,
@@ -249,10 +278,13 @@ module.exports = {
   buildInviteMessage,
   buildHotelNotifyMessage,
   buildHotelReminderMessage,
+  buildArrivalChangeMessage,
   sendMessage,
   deleteMessage,
   pinChatMessage,
   createForumTopic,
   getChatMember,
+  answerCallbackQuery,
+  editMessageReplyMarkup,
   esc,
 };

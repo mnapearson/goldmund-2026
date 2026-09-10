@@ -1,15 +1,15 @@
 const { google } = require('googleapis');
 
 const SHEET_NAME = 'Registrations';
-// Data-write range (writeRowAt) covers A:AE -- unlike group-membership/invite
+// Data-write range (writeRowAt) covers A:AG -- unlike group-membership/invite
 // history (V-Y), which is genuinely unknown until later functions fill it
-// in, Waitlisted (Z), Hotel Payment Status (AB), Cancelled (AD), and Needs
-// Refund (AE) ARE known at signup time (computed from housing/capacity, or
-// defaulted false), so they're written alongside the rest of the row.
-// Hotel Notified At (AA) and Hotel Last Reminded At (AC) stay blank until
-// notify-hotel.js / remind-hotel.js fill them in.
-const DATA_RANGE = `${SHEET_NAME}!A2:AE`;
-const HEADER_RANGE = `${SHEET_NAME}!A1:AE1`;
+// in, Waitlisted (Z), Hotel Payment Status (AB), Cancelled (AD), Needs
+// Refund (AE), and Needs Follow-up (AG) ARE known at signup time (computed
+// or defaulted false), so they're written alongside the rest of the row.
+// Hotel Notified At (AA), Hotel Last Reminded At (AC), and Arrival Notice
+// Sent At (AF) stay blank until the relevant notify function fills them in.
+const DATA_RANGE = `${SHEET_NAME}!A2:AG`;
+const HEADER_RANGE = `${SHEET_NAME}!A1:AG1`;
 const HEADERS = [
   'Reg ID', 'Name', 'Email', 'Telegram', 'Phone', 'Arrival', 'Housing', 'Contribution (€)',
   'Top Faction', 'M', 'S', 'R', 'T', 'K', 'Payment Status', 'Submitted At', 'Telegram Chat ID', 'Language',
@@ -18,6 +18,7 @@ const HEADERS = [
   'Waitlisted',
   'Hotel Notified At', 'Hotel Payment Status', 'Hotel Last Reminded At',
   'Cancelled', 'Needs Refund',
+  'Arrival Notice Sent At', 'Needs Follow-up',
 ];
 
 let sheetsClient = null;
@@ -79,7 +80,7 @@ async function writeRowAt(rowNumber, row) {
   const sheets = await getSheets();
   await sheets.spreadsheets.values.update({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A${rowNumber}:AE${rowNumber}`,
+    range: `${SHEET_NAME}!A${rowNumber}:AG${rowNumber}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });

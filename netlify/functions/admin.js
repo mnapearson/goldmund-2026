@@ -34,6 +34,8 @@ function toEntry(r) {
     hotelLastRemindedAt: r[28] || '',
     cancelled: r[29] === 'TRUE',
     needsRefund: r[30] === 'TRUE',
+    arrivalNoticeSentAt: r[31] || '',
+    needsFollowUp: r[32] === 'TRUE',
   };
 }
 

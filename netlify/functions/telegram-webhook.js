@@ -1,5 +1,5 @@
 const { findRowByRegId, findRowByChatId, updateCell } = require('./lib/sheets');
-const { buildConfirmationMessage, buildWaitlistMessage, sendMessage, deleteMessage, pinChatMessage, createForumTopic, getChatMember, esc } = require('./lib/telegram');
+const { buildConfirmationMessage, buildWaitlistMessage, sendMessage, deleteMessage, pinChatMessage, createForumTopic, getChatMember, answerCallbackQuery, editMessageReplyMarkup, esc } = require('./lib/telegram');
 const { runHotelNotify } = require('./lib/hotelNotify');
 
 function rowToEntry(row) {
@@ -243,6 +243,73 @@ async function handleNotifyHotel(message) {
   return { statusCode: 200, body: 'ok' };
 }
 
+const ARRIVAL_YES_CONFIRM = {
+  de: 'Super, danke! Wir haben deine Anreise auf Donnerstag aktualisiert. Bis bald in Zeitz! 🎉',
+  en: "Great, thank you! We've updated your arrival to Thursday. See you soon in Zeitz! 🎉",
+};
+const ARRIVAL_NO_CONFIRM = {
+  de: 'Verstanden — wir melden uns bei dir, um das zu besprechen.',
+  en: "Understood — we'll reach out to you to talk this through.",
+};
+
+// Handles a tap on the Thursday-arrival inline keyboard from
+// notify-arrival-change.js. Always answers the callback first (clears the
+// button's loading spinner) before doing anything else, so a slow sheet
+// write never leaves the tapper staring at a spinner.
+async function handleArrivalCallback(callbackQuery, answer, regId) {
+  const message = callbackQuery.message;
+  const chatId = message && message.chat && message.chat.id;
+  const messageId = message && message.message_id;
+
+  try {
+    await answerCallbackQuery(callbackQuery.id);
+  } catch (e) {
+    console.error('arrival callback: answerCallbackQuery failed', e);
+  }
+
+  try {
+    const found = await findRowByRegId(regId);
+    if (!found || !chatId) return { statusCode: 200, body: 'ok' };
+
+    const lang = found.row[17] === 'en' ? 'en' : 'de';
+
+    if (answer === 'yes') {
+      await updateCell(found.rowNumber, 'F', 'thu');
+    } else {
+      await updateCell(found.rowNumber, 'AG', 'TRUE');
+    }
+
+    if (messageId) {
+      try {
+        await editMessageReplyMarkup(chatId, messageId, { inline_keyboard: [] });
+      } catch (e) {
+        console.error('arrival callback: could not strip inline keyboard', e);
+      }
+    }
+
+    const confirmText = (answer === 'yes' ? ARRIVAL_YES_CONFIRM : ARRIVAL_NO_CONFIRM)[lang];
+    await sendMessage(chatId, confirmText);
+  } catch (err) {
+    console.error('arrival callback error', err);
+  }
+
+  return { statusCode: 200, body: 'ok' };
+}
+
+async function handleCallbackQuery(callbackQuery) {
+  const data = callbackQuery.data || '';
+  const m = /^arrival_(yes|no):(.+)$/.exec(data);
+  if (!m) {
+    try {
+      await answerCallbackQuery(callbackQuery.id);
+    } catch (e) {
+      console.error('callback_query: answerCallbackQuery failed for unrecognized data', e);
+    }
+    return { statusCode: 200, body: 'ignored' };
+  }
+  return handleArrivalCallback(callbackQuery, m[1], m[2]);
+}
+
 // Keeps "Joined Group" fresh between manual Sync Group Status runs -- fires
 // the moment someone actually joins, instead of only on the next check-membership sweep.
 async function handleNewChatMembers(chatId, newMembers) {
@@ -277,6 +344,10 @@ exports.handler = async (event) => {
     update = JSON.parse(event.body || '{}');
   } catch (e) {
     return { statusCode: 200, body: 'ignored' };
+  }
+
+  if (update.callback_query) {
+    return handleCallbackQuery(update.callback_query);
   }
 
   const message = update.message;

@@ -489,6 +489,8 @@
         <button class="btn" onclick="copyEmailsHotelNoChat()">Copy Hotel Emails: No Chat ID</button>
         <button class="btn" onclick="notifyHotelGuests()">Notify Hotel Guests</button>
         <button class="btn" onclick="remindHotelPayment()">Remind Hotel Payment</button>
+        <button class="btn" onclick="notifyFridayArrivals()">Notify Friday Arrivals</button>
+        <button class="btn" onclick="copyEmailsFridayNoChat()">Copy Friday-Arrival Emails (No Telegram)</button>
         <button class="btn primary" id="sync-btn" onclick="syncSheet()">Sync Sheet</button>
         <button class="btn" id="sync-group-btn" onclick="syncGroupStatus()">Sync Group Status</button>
         <span id="sync-status" style="font-family:'Oswald',sans-serif; font-size:11px; color:#55514b;"></span>
@@ -1035,6 +1037,7 @@ function renderAdminStats(){
   const waitlistCount=adminEntries.filter(e=>e.waitlisted&&!e.cancelled).length;
   const cancelledEntries=adminEntries.filter(e=>e.cancelled);
   const needsRefund=adminEntries.filter(e=>e.needsRefund).length;
+  const needsFollowUp=adminEntries.filter(e=>e.needsFollowUp&&!e.cancelled).length;
   const fc={M:0,S:0,R:0,T:0,K:0}; adminEntries.forEach(e=>{if(e.topFaction)fc[e.topFaction]++;});
   w.innerHTML=`<div class="stat-card"><div class="num">${total}</div><div class="lab">Registrations</div></div>
     <div class="stat-card"><div class="num">€${sum}</div><div class="lab">Pledged</div></div>
@@ -1043,6 +1046,7 @@ function renderAdminStats(){
     <div class="stat-card"><div class="num">${waitlistCount}</div><div class="lab">Waitlist</div></div>
     <div class="stat-card"><div class="num">${cancelledEntries.length}</div><div class="lab">Cancelled</div></div>
     <div class="stat-card"${needsRefund?' style="outline:2px solid var(--red);"':''}><div class="num">${needsRefund}</div><div class="lab">Needs Refund</div></div>
+    <div class="stat-card"${needsFollowUp?' style="outline:2px solid var(--red);"':''}><div class="num">${needsFollowUp}</div><div class="lab">Needs Follow-up</div></div>
     ${Object.keys(FACTIONS).map(f=>`<div class="stat-card"><div class="num">${fc[f]}</div><div class="lab">${FACTIONS[f].en}</div></div>`).join('')}`;
 
   const fw=document.getElementById('admin-stats-funnel');
@@ -1109,8 +1113,9 @@ function renderAdminTable(){
     const rowStyle=e.cancelled?' style="background:rgba(184,32,42,.06); opacity:.6;"':(e.waitlisted?' style="background:rgba(107,100,88,.10);"':(isPaid?' style="background:rgba(169,133,47,.08);"':''));
     const firstCellStyle=e.cancelled?' style="border-left:3px solid var(--red);"':(e.waitlisted?' style="border-left:3px solid #6b6458;"':(isPaid?' style="border-left:3px solid var(--brass);"':''));
     const nameStyle=e.cancelled?' style="text-decoration:line-through;"':'';
+    const followUpFlag=e.needsFollowUp?`<span title="Needs Follow-up (arrival change) — click to clear" style="cursor:pointer; margin-right:4px;" onclick="toggleNeedsFollowUp('${e.regId}',false)">🚩</span>`:'';
     return `<tr${rowStyle}>
-    <td${firstCellStyle}>${esc(e.regId)}</td><td${nameStyle}>${esc(e.name)}</td><td>${esc(e.email)}</td><td>${esc(e.telegram)}</td><td>${esc(e.housing)}</td>
+    <td${firstCellStyle}>${esc(e.regId)}</td><td${nameStyle}>${followUpFlag}${esc(e.name)}</td><td>${esc(e.email)}</td><td>${esc(e.telegram)}</td><td>${esc(e.housing)}</td>
     <td>€${e.contribution||0}</td><td><span class="fchip" style="background:${fac?fac.color:'#999'}">${fac?fac.en:'—'}</span></td>
     <td>${s.M||0}</td><td>${s.S||0}</td><td>${s.R||0}</td><td>${s.T||0}</td><td>${s.K||0}</td>
     <td><span class="fchip" style="background:${isPaid?'var(--brass)':'#999'}; cursor:pointer;" title="Klicken zum Umschalten" onclick="togglePayment(this,'${e.regId}','${e.paymentStatus}')">${esc(e.paymentStatus)}</span> ${e.waitlisted?`<span class="fchip" style="background:#6b6458;">Waitlist</span>`:''}</td>
@@ -1175,6 +1180,20 @@ async function toggleNeedsRefund(regId,needsRefund){
     if(entry) entry.needsRefund=needsRefund;
     renderAdminTable(); renderAdminStats();
   }catch(err){ alert('Could not update refund status: '+(err.message||'unknown error')); }
+}
+async function toggleNeedsFollowUp(regId,needsFollowUp){
+  const confirmMsg=needsFollowUp
+    ? `Re-flag ${regId} as needing follow-up?`
+    : `Clear the follow-up flag for ${regId}?`;
+  if(!confirm(confirmMsg)) return;
+  try{
+    const res=await fetch('/.netlify/functions/follow-up',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({regId,needsFollowUp,passphrase:adminPass})});
+    const json=await res.json();
+    if(!res.ok||!json.success) throw new Error(json.error||'failed');
+    const entry=adminEntries.find(x=>x.regId===regId);
+    if(entry) entry.needsFollowUp=needsFollowUp;
+    renderAdminTable(); renderAdminStats();
+  }catch(err){ alert('Could not update follow-up status: '+(err.message||'unknown error')); }
 }
 async function promoteUser(regId){
   if(!confirm(`Promote ${regId} off the waitlist? They'll be sent the normal payment confirmation if they have a Telegram contact.`)) return;
@@ -1308,6 +1327,9 @@ function copyEmailsWaitlist(){
 function copyEmailsHotelNoChat(){
   copyEmails(e=>e.housing==='Hotel Maximilian'&&!e.telegramChatId&&!e.cancelled, 'Hotel Maximilian, no Chat ID');
 }
+function copyEmailsFridayNoChat(){
+  copyEmails(e=>e.arrival==='fri'&&!e.telegramChatId&&!e.cancelled, 'Friday arrival, no Chat ID');
+}
 async function runHotelAction(url,progressText,successText){
   const prog=document.getElementById('bulk-progress');
   prog.textContent=progressText;
@@ -1338,6 +1360,16 @@ function remindHotelPayment(){
   if(!eligible.length){ alert('No one to remind right now (nobody eligible: already paid, not yet notified, no Chat ID, or reminded recently).'); return; }
   if(!confirm(`${eligible.length} hotel guest(s) will be reminded now.\n\nProceed?`)) return;
   runHotelAction('/.netlify/functions/remind-hotel','Sending hotel payment reminders…',(json)=>`Done: ${json.sentTo} reminded.`);
+}
+function notifyFridayArrivals(){
+  const fridayGuests=adminEntries.filter(e=>e.arrival==='fri'&&!e.waitlisted&&!e.cancelled);
+  const eligible=fridayGuests.filter(e=>e.telegramChatId&&!e.arrivalNoticeSentAt);
+  const alreadyNotified=fridayGuests.filter(e=>e.arrivalNoticeSentAt);
+  const noChatId=fridayGuests.filter(e=>!e.telegramChatId&&!e.arrivalNoticeSentAt);
+  const breakdown=`${eligible.length} will be notified now · ${alreadyNotified.length} already notified (skipped) · ${noChatId.length} no Chat ID (need manual email).`;
+  if(!eligible.length){ alert(`No one to notify right now.\n\n${breakdown}`); return; }
+  if(!confirm(`${breakdown}\n\nProceed?`)) return;
+  runHotelAction('/.netlify/functions/notify-arrival-change','Notifying Friday arrivals…',(json)=>`Done: ${json.sentTo} notified.`);
 }
 async function syncSheet(){
   const btn=document.getElementById('sync-btn'), status=document.getElementById('sync-status');

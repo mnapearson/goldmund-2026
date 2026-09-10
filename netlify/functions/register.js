@@ -119,6 +119,7 @@ exports.handler = async (event) => {
         waitlisted ? 'TRUE' : 'FALSE',
         '', hotelPaymentStatus, '', // Hotel Notified At / Hotel Payment Status / Hotel Last Reminded At
         'FALSE', 'FALSE', // Cancelled / Needs Refund
+        '', 'FALSE', // Arrival Notice Sent At / Needs Follow-up
       ],
       rows
     );
