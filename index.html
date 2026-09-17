@@ -328,7 +328,10 @@
   table{width:100%; border-collapse:collapse; font-size:13px; font-family:'Archivo',sans-serif; background:var(--bone);}
   th,td{padding:10px 12px; text-align:left; border-bottom:1px solid rgba(16,12,12,.12); white-space:nowrap;}
   th{background:var(--ink); color:var(--bone); text-transform:uppercase; font-family:'Oswald',sans-serif; font-size:10.5px; letter-spacing:.08em; position:sticky; top:0;}
+  th.sortable-th{cursor:pointer; user-select:none;}
+  th.sortable-th:hover{background:#2a2422;}
   tr:hover td{background:rgba(169,133,47,.1);}
+  #waitlist-table-wrap{margin-top:0;}
   .fchip{display:inline-block; padding:2px 9px; font-family:'Oswald',sans-serif; font-size:11px; font-weight:600; color:var(--bone); letter-spacing:.05em;}
   .read-more-btn{cursor:pointer; text-decoration:underline; font-size:11px; color:var(--red); white-space:nowrap; margin-left:4px;}
   .gate{max-width:340px; margin:120px auto; text-align:center;}
@@ -523,6 +526,13 @@
     <div class="stats-panel">
       <div class="stats-panel-label">Overview</div>
       <div class="admin-stats" id="admin-stats"></div>
+    </div>
+    <div class="stats-panel">
+      <div class="stats-panel-label">Waitlist</div>
+      <div class="admin-table-wrap" id="waitlist-table-wrap">
+        <table id="waitlist-table"><thead><tr><th>Reg ID</th><th>Name</th><th>Email</th><th>Telegram</th><th>Submitted</th><th>Action</th></tr></thead><tbody></tbody></table>
+        <div class="empty-state" id="waitlist-empty" style="display:none; padding:18px;">No one on the waitlist right now.</div>
+      </div>
     </div>
     <div class="admin-table-wrap">
       <table id="admin-table"><thead></thead><tbody></tbody></table>
@@ -1018,6 +1028,37 @@ let adminPass='';
 let adminEntries=[];
 let groupLink='';
 let expandedDetails=new Set();
+let adminSortKey=null;
+const ADMIN_COLUMNS=[
+  {key:'regId',label:'Reg ID'},{key:'name',label:'Name'},{key:'email',label:'Email'},{key:'telegram',label:'Telegram'},
+  {key:'housing',label:'Housing'},{key:'contribution',label:'Contribution'},{key:'topFactionLabel',label:'Faction'},
+  {key:'scoreM',label:'M'},{key:'scoreS',label:'S'},{key:'scoreR',label:'R'},{key:'scoreT',label:'T'},{key:'scoreK',label:'K'},
+  {key:'paymentStatus',label:'Payment'},{key:'hotelPaymentStatus',label:'Hotel Payment'},{key:'submittedAt',label:'Submitted'},
+  {key:'contributions',label:'Contributions'},{key:'contributionDetails',label:'Details'},{key:null,label:'Action'},
+];
+function getAdminSortValue(e,key){
+  switch(key){
+    case 'contribution': return e.contribution||0;
+    case 'topFactionLabel': return (e.topFaction&&FACTIONS[e.topFaction])?FACTIONS[e.topFaction].en:'';
+    case 'scoreM': return (e.scores&&e.scores.M)||0;
+    case 'scoreS': return (e.scores&&e.scores.S)||0;
+    case 'scoreR': return (e.scores&&e.scores.R)||0;
+    case 'scoreT': return (e.scores&&e.scores.T)||0;
+    case 'scoreK': return (e.scores&&e.scores.K)||0;
+    default: return e[key]||'';
+  }
+}
+function adminSortComparator(key){
+  return (a,b)=>{
+    const va=getAdminSortValue(a,key), vb=getAdminSortValue(b,key);
+    if(typeof va==='number'&&typeof vb==='number') return va-vb;
+    return String(va).localeCompare(String(vb));
+  };
+}
+function setAdminSort(key){
+  adminSortKey=key;
+  renderAdminTable();
+}
 function isPaidStatus(s){ return (s||'').trim().toLowerCase()==='bezahlt'; }
 // Courtesy cooldown, not a hard skip -- lets bulk invite/remind repeat
 // (correct behavior for reminders) without re-nudging the same person same-week.
@@ -1129,10 +1170,15 @@ function renderTruncatedCell(e,field,maxLen){
 }
 function renderAdminTable(){
   const th=document.querySelector('#admin-table thead'), tb=document.querySelector('#admin-table tbody'), es=document.getElementById('empty-state');
-  th.innerHTML=`<tr><th>Reg ID</th><th>Name</th><th>Email</th><th>Telegram</th><th>Housing</th><th>Contribution</th><th>Faction</th><th>M</th><th>S</th><th>R</th><th>T</th><th>K</th><th>Payment</th><th>Hotel Payment</th><th>Submitted</th><th>Contributions</th><th>Details</th><th>Action</th></tr>`;
+  th.innerHTML='<tr>'+ADMIN_COLUMNS.map(c=>c.key
+    ?`<th class="sortable-th" onclick="setAdminSort('${c.key}')" title="Sort A-Z">${c.label}${adminSortKey===c.key?' ▲':''}</th>`
+    :`<th>${c.label}</th>`).join('')+'</tr>';
+  renderWaitlistPanel();
   if(!adminEntries.length){ tb.innerHTML=''; es.style.display='block'; return; }
   es.style.display='none';
-  const sorted=[...adminEntries].sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
+  const sorted=adminSortKey
+    ? [...adminEntries].sort(adminSortComparator(adminSortKey))
+    : [...adminEntries].sort((a,b)=>new Date(b.submittedAt)-new Date(a.submittedAt));
   tb.innerHTML=sorted.map(e=>{ const s=e.scores||{}; const fac=e.topFaction&&FACTIONS[e.topFaction]; const isPaid=isPaidStatus(e.paymentStatus);
     const rowStyle=e.cancelled?' style="background:rgba(184,32,42,.06); opacity:.6;"':(e.waitlisted?' style="background:rgba(107,100,88,.10);"':(isPaid?' style="background:rgba(169,133,47,.08);"':''));
     const firstCellStyle=e.cancelled?' style="border-left:3px solid var(--red);"':(e.waitlisted?' style="border-left:3px solid #6b6458;"':(isPaid?' style="border-left:3px solid var(--brass);"':''));
@@ -1148,6 +1194,16 @@ function renderAdminTable(){
     <td style="white-space:normal; max-width:220px;">${renderTruncatedCell(e,'contributions',50)}</td>
     <td style="white-space:normal; max-width:280px;">${renderTruncatedCell(e,'contributionDetails',60)}</td>
     <td>${renderActionCell(e)}</td></tr>`;}).join('');
+}
+function renderWaitlistPanel(){
+  const tb=document.querySelector('#waitlist-table tbody'), es=document.getElementById('waitlist-empty');
+  const waiting=adminEntries.filter(e=>e.waitlisted&&!e.cancelled).sort((a,b)=>new Date(a.submittedAt)-new Date(b.submittedAt));
+  if(!waiting.length){ tb.innerHTML=''; es.style.display='block'; return; }
+  es.style.display='none';
+  tb.innerHTML=waiting.map(e=>`<tr>
+    <td>${esc(e.regId)}</td><td>${esc(e.name)}</td><td>${esc(e.email)}</td><td>${esc(e.telegram)}</td>
+    <td>${e.submittedAt?new Date(e.submittedAt).toLocaleString():'—'}</td>
+    <td><button class="btn" style="padding:5px 10px; font-size:10px;" onclick="promoteUser('${e.regId}')">Promote</button></td></tr>`).join('');
 }
 function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
 async function togglePaymentField(el,regId,currentStatus,field,onUpdate){
