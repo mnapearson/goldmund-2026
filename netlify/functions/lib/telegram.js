@@ -105,29 +105,29 @@ function buildReminderMessage(entry, lang) {
   if (isDe) {
     return (
       `Goldmund,\n\n` +
-      `du hast dich für den Goldenen Kongress angemeldet — wir freuen uns auf dich. Deine Überweisung steht noch aus.\n\n` +
-      `Bitte überweise deinen Beitrag von ${entry.contribution}€ so bald wie möglich:\n\n` +
+      `das ist eine letzte Erinnerung: Deine Überweisung für den Goldenen Kongress steht noch aus.\n\n` +
+      `Bitte überweise deinen Beitrag von ${entry.contribution}€ bis spätestens Mittwoch, 23. September, um dir deinen Platz zu sichern:\n\n` +
       `Empfänger: ${esc(bank.holder)}\n` +
       `IBAN: ${esc(bank.iban)}\n` +
       `BIC: ${esc(bank.bic)}\n` +
       `${esc(bank.bankAddress)}\n` +
       `Verwendungszweck: „${esc(PAYMENT_REF)}"\n\n` +
       (bank.wero ? `Alternativ per Wero: ${esc(bank.wero)}\n\n` : '') +
-      `Dein Platz ist erst mit Eingang der Zahlung bestätigt. Nach dem 15. September werden nicht überwiesene Anmeldungen an Personen auf der Warteliste vergeben.\n\n` +
+      `⚠️ <i>Falls die Zahlung bis Mittwoch nicht eingegangen ist, wird dein Platz an eine Person auf der Warteliste vergeben.</i>\n\n` +
       `— Der Goldene Kongress`
     );
   }
   return (
     `Goldmund,\n\n` +
-    `you registered for the Golden Congress — we're looking forward to having you. Your payment is still outstanding.\n\n` +
-    `Please transfer your contribution of €${entry.contribution} as soon as possible:\n\n` +
+    `this is a final reminder: your payment for the Golden Congress is still outstanding.\n\n` +
+    `Please transfer your contribution of €${entry.contribution} by Wednesday, September 23 at the latest to keep your spot:\n\n` +
     `Recipient: ${esc(bank.holder)}\n` +
     `IBAN: ${esc(bank.iban)}\n` +
     `BIC: ${esc(bank.bic)}\n` +
     `${esc(bank.bankAddress)}\n` +
     `Reference: "${esc(PAYMENT_REF)}"\n\n` +
-    (bank.wero ? `Alternative via Wero: ${esc(bank.wero)}\n\n` : '') +
-    `Your spot is only confirmed once payment is received. After September 15, unpaid registrations will be offered to the waiting list.\n\n` +
+    (bank.wero ? `Alternatively via Wero: ${esc(bank.wero)}\n\n` : '') +
+    `⚠️ <i>If payment hasn't arrived by Wednesday, your spot will be given to someone on the waiting list.</i>\n\n` +
     `— The Golden Congress`
   );
 }
