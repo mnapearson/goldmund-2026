@@ -508,6 +508,7 @@
         <button class="btn" onclick="copyEmailsUnpaid()">Copy Unpaid Emails</button>
         <button class="btn" onclick="copyEmailsWaitlist()">Copy Waitlist Emails</button>
         <button class="btn" onclick="copyEmailsHotelNoChat()">Copy Hotel Emails: No Chat ID</button>
+        <button class="btn" onclick="copyEmailsHotelUnpaidNoChat()">Copy Unpaid Hotel Emails: No Chat ID</button>
         <button class="btn" onclick="copyEmailsFridayNoChat()">Copy Friday-Arrival Emails (No Telegram)</button>
       </div>
       <div class="ctrl-group">
@@ -1404,6 +1405,9 @@ function copyEmailsWaitlist(){
 }
 function copyEmailsHotelNoChat(){
   copyEmails(e=>e.housing==='Hotel Maximilian'&&!e.telegramChatId&&!e.cancelled, 'Hotel Maximilian, no Chat ID');
+}
+function copyEmailsHotelUnpaidNoChat(){
+  copyEmails(e=>e.housing==='Hotel Maximilian'&&!e.telegramChatId&&!e.cancelled&&(e.hotelPaymentStatus||'').trim()!=='Bezahlt', 'Hotel Maximilian, unpaid, no Chat ID');
 }
 function copyEmailsFridayNoChat(){
   copyEmails(e=>e.arrival==='fri'&&!e.telegramChatId&&!e.cancelled, 'Friday arrival, no Chat ID');
