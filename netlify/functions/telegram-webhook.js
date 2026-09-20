@@ -10,8 +10,11 @@ function rowToEntry(row) {
     contribution: Number(row[7]) || 0,
     topFaction: row[8] || '',
     scores: { M: Number(row[9]) || 0, S: Number(row[10]) || 0, R: Number(row[11]) || 0, T: Number(row[12]) || 0, K: Number(row[13]) || 0 },
+    paymentStatus: row[14] || 'Ausstehend',
     lang: row[17] || 'de',
+    hotelCost: row[20] || '',
     waitlisted: row[25] === 'TRUE',
+    hotelPaymentStatus: row[27] || '',
   };
 }
 

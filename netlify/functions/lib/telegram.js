@@ -28,52 +28,67 @@ function bankBlock() {
   };
 }
 
+// Doubles as both the immediate post-registration message AND the message
+// someone gets months later the first time they finally start the bot --
+// so it can't unconditionally ask for payment like it used to. It checks
+// current Payment Status / Hotel Payment Status and only shows a payment
+// block for whichever (if either) is still actually outstanding.
 function buildConfirmationMessage(entry, lang) {
   const isDe = lang !== 'en';
   const bank = bankBlock();
   const factionName = FACTION_NAMES[entry.topFaction] ? FACTION_NAMES[entry.topFaction][isDe ? 'de' : 'en'] : '—';
+  const isHotel = entry.housing === 'Hotel Maximilian';
+  const contributionUnpaid = (entry.paymentStatus || '').trim() !== 'Bezahlt';
+  const hotelUnpaid = isHotel && (entry.hotelPaymentStatus || '').trim() !== 'Bezahlt';
+  const anyUnpaid = contributionUnpaid || hotelUnpaid;
 
   if (isDe) {
+    const contributionBlock = contributionUnpaid
+      ? `\n💶 <b>Dein Beitrag von €${entry.contribution} steht noch aus.</b>\n` +
+        `Empfänger: ${esc(bank.holder)}\n` +
+        `IBAN: ${esc(bank.iban)}\n` +
+        `BIC: ${esc(bank.bic)}\n` +
+        `${esc(bank.bankAddress)}\n` +
+        `Verwendungszweck: „${esc(PAYMENT_REF)}"\n`
+      : '';
+    const hotelBlock = hotelUnpaid
+      ? `\n🏨 <b>Deine Hotelzahlung von €${entry.hotelCost || 112} steht noch aus.</b>\n` +
+        `Johann Aaron Krautheim\n` +
+        `IBAN: BE47905243302780\n` +
+        `Verwendungszweck: „Nachname, Vorname + Kostenbeteiligung Übernachtung"\n`
+      : '';
     return (
       `<b>Willkommen beim Goldenen Kongress, ${esc(entry.name)}!</b>\n\n` +
-      `🏕 <b>Unterkunft:</b> ${esc(entry.housing)}\n` +
-      `💶 <b>Beitrag:</b> €${entry.contribution}\n\n` +
+      `🏕 <b>Unterkunft:</b> ${esc(entry.housing)}\n\n` +
       `<b>Tendenz zu:</b> ${esc(factionName)}\n` +
-      `<i>Hinweis: Die endgültige Fraktionszuteilung wird von den Organisator*innen kuratiert und kann im Sinne der Spieldramaturgie angepasst werden.</i>\n\n` +
-      `<b>Bankdaten für deine Überweisung:</b>\n` +
-      `Betrag: €${entry.contribution}\n` +
-      `Bank: ${esc(bank.bank)}\n` +
+      `<i>Hinweis: Die endgültige Fraktionszuteilung wird von den Organisator*innen kuratiert und kann im Sinne der Spieldramaturgie angepasst werden.</i>\n` +
+      contributionBlock + hotelBlock +
+      (anyUnpaid ? `\n⚠️ <i>Dein Platz ist erst bestätigt, wenn alle Zahlungen eingegangen sind.</i>\n` : '') +
+      `\nFragen? Die beantworten wir in deiner Fraktions-Gruppe — du wirst vor dem Kongress dazu eingeladen.`
+    );
+  }
+  const contributionBlock = contributionUnpaid
+    ? `\n💶 <b>Your contribution of €${entry.contribution} is still outstanding.</b>\n` +
+      `Recipient: ${esc(bank.holder)}\n` +
       `IBAN: ${esc(bank.iban)}\n` +
       `BIC: ${esc(bank.bic)}\n` +
       `${esc(bank.bankAddress)}\n` +
-      `Empfänger: ${esc(bank.holder)}\n` +
-      `Verwendungszweck: ${esc(PAYMENT_REF)}\n` +
-      (bank.deadline ? `Zahlungsfrist: ${esc(bank.deadline)}\n` : '') +
-      (bank.wero ? `\nAlternativ per Wero: Telefonnummer ${esc(bank.wero)}\n` : '') +
-      `\n⚠️ <i>Dein Platz ist erst bestätigt, wenn die Zahlung eingegangen ist.</i>\n` +
-      `Du erhältst nicht nochmal eine separate Anmeldebestätigung. Bitte überweise den Betrag am besten direkt. Nach dem 15.09. werden alle nicht überwiesenen Anmeldungen an Personen auf der Warteliste vergeben. Du siehst, dass Überweisung und Anmeldung erfolgreich waren, wenn du in die private Gäste-Telegram-Gruppe hinzugefügt wurdest.\n\n` +
-      `Fragen? Die beantworten wir in deiner Fraktions-Gruppe — du wirst vor dem Kongress dazu eingeladen.`
-    );
-  }
+      `Reference: "${esc(PAYMENT_REF)}"\n`
+    : '';
+  const hotelBlock = hotelUnpaid
+    ? `\n🏨 <b>Your hotel payment of €${entry.hotelCost || 112} is still outstanding.</b>\n` +
+      `Johann Aaron Krautheim\n` +
+      `IBAN: BE47905243302780\n` +
+      `Purpose: "Last name, first name + Kostenbeteiligung Übernachtung"\n`
+    : '';
   return (
     `<b>Welcome to the Golden Congress, ${esc(entry.name)}!</b>\n\n` +
-    `🏕 <b>Housing:</b> ${esc(entry.housing)}\n` +
-    `💶 <b>Contribution:</b> €${entry.contribution}\n\n` +
+    `🏕 <b>Housing:</b> ${esc(entry.housing)}\n\n` +
     `<b>Leaning toward:</b> ${esc(factionName)}\n` +
-    `<i>Note: Final faction placement is curated by the organizers and may be adjusted for game design purposes.</i>\n\n` +
-    `<b>Bank details for your transfer:</b>\n` +
-    `Amount: €${entry.contribution}\n` +
-    `Bank: ${esc(bank.bank)}\n` +
-    `IBAN: ${esc(bank.iban)}\n` +
-    `BIC: ${esc(bank.bic)}\n` +
-    `${esc(bank.bankAddress)}\n` +
-    `Recipient: ${esc(bank.holder)}\n` +
-    `Reference: ${esc(PAYMENT_REF)}\n` +
-    (bank.deadline ? `Payment deadline: ${esc(bank.deadline)}\n` : '') +
-    (bank.wero ? `\nAlternatively via Wero: Phone number ${esc(bank.wero)}\n` : '') +
-    `\n⚠️ <i>Your spot is only confirmed once payment has arrived.</i>\n` +
-    `You won't receive a separate registration confirmation. Please transfer the amount as soon as possible. After September 15th, any unpaid registrations will be given to people on the waitlist. You'll know your transfer and registration were successful once you've been added to the private guest Telegram group.\n\n` +
-    `Questions? We'll answer those in your faction group chat — you'll be invited ahead of the congress.`
+    `<i>Note: Final faction placement is curated by the organizers and may be adjusted for game design purposes.</i>\n` +
+    contributionBlock + hotelBlock +
+    (anyUnpaid ? `\n⚠️ <i>Your spot is only confirmed once all payments have arrived.</i>\n` : '') +
+    `\nQuestions? We'll answer those in your faction group chat — you'll be invited ahead of the congress.`
   );
 }
 
