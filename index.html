@@ -501,6 +501,7 @@
         <button class="btn" onclick="notifyHotelGuests()">Notify Hotel Guests</button>
         <button class="btn" onclick="remindHotelPayment()">Remind Hotel Payment</button>
         <button class="btn" onclick="notifyFridayArrivals()">Notify Friday Arrivals</button>
+        <button class="btn" onclick="sendFactionReveals()">Send Faction Reveals</button>
       </div>
       <div class="ctrl-group">
         <span class="ctrl-label">Copy Emails</span>
@@ -1452,6 +1453,17 @@ function notifyFridayArrivals(){
   if(!eligible.length){ alert(`No one to notify right now.\n\n${breakdown}`); return; }
   if(!confirm(`${breakdown}\n\nProceed?`)) return;
   runHotelAction('/.netlify/functions/notify-arrival-change','Notifying Friday arrivals…',(json)=>`Done: ${json.sentTo} notified.`);
+}
+function sendFactionReveals(){
+  const VALID_CODES=['M','S','R','T','K'];
+  const eligible=adminEntries.filter(e=>VALID_CODES.includes(e.topFaction)&&!e.waitlisted&&!e.cancelled);
+  const telegramTargets=eligible.filter(e=>e.telegramChatId&&!e.factionRevealSentAt);
+  const emailTargets=eligible.filter(e=>!e.telegramChatId&&!e.factionRevealDraftCreatedAt&&e.email);
+  const alreadyDone=eligible.filter(e=>e.telegramChatId?e.factionRevealSentAt:e.factionRevealDraftCreatedAt).length;
+  const breakdown=`${telegramTargets.length} via Telegram, ${emailTargets.length} as email drafts to prepare, ${alreadyDone} already sent — proceed?`;
+  if(!telegramTargets.length&&!emailTargets.length){ alert(`Nothing to send right now.\n\n${breakdown}`); return; }
+  if(!confirm(breakdown)) return;
+  runHotelAction('/.netlify/functions/notify-faction-reveal','Sending faction reveals…',(json)=>`Done: ${json.telegramSent} via Telegram, ${json.draftsCreated} drafts created (${json.skipped} already done).`);
 }
 async function syncSheet(){
   const btn=document.getElementById('sync-btn'), status=document.getElementById('sync-status');

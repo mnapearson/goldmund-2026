@@ -36,6 +36,8 @@ function toEntry(r) {
     needsRefund: r[30] === 'TRUE',
     arrivalNoticeSentAt: r[31] || '',
     needsFollowUp: r[32] === 'TRUE',
+    factionRevealSentAt: r[33] || '',
+    factionRevealDraftCreatedAt: r[34] || '',
   };
 }
 

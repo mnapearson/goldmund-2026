@@ -120,6 +120,7 @@ exports.handler = async (event) => {
         '', hotelPaymentStatus, '', // Hotel Notified At / Hotel Payment Status / Hotel Last Reminded At
         'FALSE', 'FALSE', // Cancelled / Needs Refund
         '', 'FALSE', // Arrival Notice Sent At / Needs Follow-up
+        '', '', // Faction Reveal Sent At / Faction Reveal Draft Created At
       ],
       rows
     );

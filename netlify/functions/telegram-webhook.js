@@ -1,6 +1,7 @@
 const { findRowByRegId, findRowByChatId, updateCell } = require('./lib/sheets');
 const { buildConfirmationMessage, buildWaitlistMessage, sendMessage, deleteMessage, pinChatMessage, createForumTopic, getChatMember, answerCallbackQuery, editMessageReplyMarkup, esc } = require('./lib/telegram');
 const { runHotelNotify } = require('./lib/hotelNotify');
+const { runFactionReveal } = require('./lib/factionReveal');
 
 function rowToEntry(row) {
   return {
@@ -246,6 +247,35 @@ async function handleNotifyHotel(message) {
   return { statusCode: 200, body: 'ok' };
 }
 
+async function handleFactionReveal(message) {
+  const chatId = message.chat.id;
+  const fromId = message.from && message.from.id;
+
+  const authorized = await isAuthorizedSender(chatId, fromId);
+  if (!authorized) {
+    try {
+      await sendMessage(chatId, 'Nur für Organisator*innen.');
+    } catch (e) {
+      console.error('factionreveal reject send error', e);
+    }
+    return { statusCode: 200, body: 'ok' };
+  }
+
+  try {
+    const { telegramSent, draftsCreated, skipped } = await runFactionReveal();
+    await sendMessage(chatId, `✓ Fraktions-Reveal: ${telegramSent} über Telegram gesendet, ${draftsCreated} E-Mail-Entwürfe erstellt, ${skipped} bereits erledigt.`);
+  } catch (err) {
+    console.error('factionreveal error', err);
+    try {
+      await sendMessage(chatId, `Fehler beim Senden der Fraktions-Reveals: ${esc(err.message)}`);
+    } catch (e) {
+      console.error('factionreveal error-notice send error', e);
+    }
+  }
+
+  return { statusCode: 200, body: 'ok' };
+}
+
 const ARRIVAL_YES_CONFIRM = {
   de: 'Super, danke! Wir haben deine Anreise auf Donnerstag aktualisiert. Bis bald in Zeitz! 🎉',
   en: "Great, thank you! We've updated your arrival to Thursday. See you soon in Zeitz! 🎉",
@@ -373,6 +403,9 @@ exports.handler = async (event) => {
   }
   if (/^\/notifyhotel(?:@\w+)?/.test(trimmedText)) {
     return handleNotifyHotel(message);
+  }
+  if (/^\/factionreveal(?:@\w+)?/.test(trimmedText)) {
+    return handleFactionReveal(message);
   }
 
   const match = /^\/start(?:@\w+)?(?:\s+(\S+))?/.exec(trimmedText);

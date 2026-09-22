@@ -1,15 +1,22 @@
 const { google } = require('googleapis');
 
 const SHEET_NAME = 'Registrations';
-// Data-write range (writeRowAt) covers A:AG -- unlike group-membership/invite
+// Draft-list tab for the faction-reveal email fallback (people with no
+// Telegram Chat ID) -- this project has no Gmail-sending credentials, so
+// instead of real Gmail API drafts, each person's Name/Email/Subject/Body
+// is written here for manual copy-paste into a real draft.
+const DRAFT_SHEET_NAME = 'Faction Reveal — Email Drafts';
+const DRAFT_SHEET_HEADERS = ['Name', 'Email', 'Subject', 'Body'];
+// Data-write range (writeRowAt) covers A:AI -- unlike group-membership/invite
 // history (V-Y), which is genuinely unknown until later functions fill it
 // in, Waitlisted (Z), Hotel Payment Status (AB), Cancelled (AD), Needs
 // Refund (AE), and Needs Follow-up (AG) ARE known at signup time (computed
 // or defaulted false), so they're written alongside the rest of the row.
-// Hotel Notified At (AA), Hotel Last Reminded At (AC), and Arrival Notice
-// Sent At (AF) stay blank until the relevant notify function fills them in.
-const DATA_RANGE = `${SHEET_NAME}!A2:AG`;
-const HEADER_RANGE = `${SHEET_NAME}!A1:AG1`;
+// Hotel Notified At (AA), Hotel Last Reminded At (AC), Arrival Notice Sent
+// At (AF), Faction Reveal Sent At (AH), and Faction Reveal Draft Created At
+// (AI) stay blank until the relevant notify function fills them in.
+const DATA_RANGE = `${SHEET_NAME}!A2:AI`;
+const HEADER_RANGE = `${SHEET_NAME}!A1:AI1`;
 const HEADERS = [
   'Reg ID', 'Name', 'Email', 'Telegram', 'Phone', 'Arrival', 'Housing', 'Contribution (€)',
   'Top Faction', 'M', 'S', 'R', 'T', 'K', 'Payment Status', 'Submitted At', 'Telegram Chat ID', 'Language',
@@ -19,6 +26,7 @@ const HEADERS = [
   'Hotel Notified At', 'Hotel Payment Status', 'Hotel Last Reminded At',
   'Cancelled', 'Needs Refund',
   'Arrival Notice Sent At', 'Needs Follow-up',
+  'Faction Reveal Sent At', 'Faction Reveal Draft Created At',
 ];
 
 let sheetsClient = null;
@@ -80,7 +88,7 @@ async function writeRowAt(rowNumber, row) {
   const sheets = await getSheets();
   await sheets.spreadsheets.values.update({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A${rowNumber}:AG${rowNumber}`,
+    range: `${SHEET_NAME}!A${rowNumber}:AI${rowNumber}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [row] },
   });
@@ -169,4 +177,41 @@ async function batchUpdateCells(updates) {
   });
 }
 
-module.exports = { getAllRows, writeRowAt, ensureHeaders, nextRegId, findRowByRegId, findRowByChatId, findDuplicate, updateCell, batchUpdateCells, SHEET_NAME, HEADERS };
+// Creates the "Faction Reveal — Email Drafts" tab with its header row if it
+// doesn't already exist. Never touches the tab again if it's already there
+// (mirrors ensureHeaders's "don't clobber what's already set up" stance).
+async function ensureFactionDraftSheet() {
+  const sheets = await getSheets();
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: process.env.GOOGLE_SHEET_ID });
+  const exists = meta.data.sheets.some((s) => s.properties.title === DRAFT_SHEET_NAME);
+  if (exists) return;
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    requestBody: { requests: [{ addSheet: { properties: { title: DRAFT_SHEET_NAME } } }] },
+  });
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: `${DRAFT_SHEET_NAME}!A1:D1`,
+    valueInputOption: 'USER_ENTERED',
+    requestBody: { values: [DRAFT_SHEET_HEADERS] },
+  });
+}
+
+// rows: [[name, email, subject, body], ...]. A single append call regardless
+// of how many rows, since this tab is fully self-contained (we control every
+// column, no risk of the "stray value throws off append's heuristic" problem
+// that writeRowAt exists to avoid on the main Registrations sheet).
+async function appendFactionDraftRows(rows) {
+  if (!rows.length) return;
+  await ensureFactionDraftSheet();
+  const sheets = await getSheets();
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: `${DRAFT_SHEET_NAME}!A:D`,
+    valueInputOption: 'USER_ENTERED',
+    insertDataOption: 'INSERT_ROWS',
+    requestBody: { values: rows },
+  });
+}
+
+module.exports = { getAllRows, writeRowAt, ensureHeaders, nextRegId, findRowByRegId, findRowByChatId, findDuplicate, updateCell, batchUpdateCells, appendFactionDraftRows, SHEET_NAME, HEADERS };
