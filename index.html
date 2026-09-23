@@ -1114,7 +1114,7 @@ function renderAdminStats(){
   const cancelledEntries=adminEntries.filter(e=>e.cancelled);
   const needsRefund=adminEntries.filter(e=>e.needsRefund).length;
   const needsFollowUp=adminEntries.filter(e=>e.needsFollowUp&&!e.cancelled).length;
-  const fc={M:0,S:0,R:0,T:0,K:0}; adminEntries.forEach(e=>{if(e.topFaction)fc[e.topFaction]++;});
+  const fc={M:0,S:0,R:0,T:0,K:0}; adminEntries.forEach(e=>{if(e.topFaction&&!e.cancelled&&!e.waitlisted)fc[e.topFaction]++;});
   w.innerHTML=`<div class="stat-card"><div class="num">${total}</div><div class="lab">Registrations</div></div>
     <div class="stat-card"><div class="num">€${sum}</div><div class="lab">Pledged</div></div>
     <div class="stat-card"><div class="num">${paid}/${total}</div><div class="lab">Paid</div></div>
