@@ -680,7 +680,8 @@ const T = {
        bankCompleteNote:"Hinweis: Die Anmeldung ist erst mit Überweisung des Beitrags komplett!",
        errSubmitH:"Fast geschafft.", errSubmitP:"Deine Anmeldung konnte nicht automatisch gespeichert werden. Bitte kontaktiere die Organisator*innen, damit sie dich manuell eintragen — du kannst aber schon jetzt mit den unten stehenden Bankdaten überweisen.",
        dupH:"Du bist schon dabei!", dupP:"Diese Email-Adresse oder Telefonnummer ist bereits registriert. Falls dir das komisch vorkommt oder du deine Angaben ändern möchtest, wende dich an die Organisator*innen.",
-       capacityFullNote:"Der Kongress ist aktuell ausgebucht — neue Anmeldungen kommen auf die Warteliste." },
+       capacityFullNote:"Der Kongress ist aktuell ausgebucht — neue Anmeldungen kommen auf die Warteliste.",
+       registrationClosedH:"Die Anmeldung ist geschlossen.", registrationClosedP:"Der Goldene Kongress 2026 ist bereits ausgebucht — wir nehmen aktuell keine weiteren Anmeldungen mehr an, auch nicht für die Warteliste. Bei Fragen wende dich gerne an die Organisator*innen." },
   en:{ step:["Who you are","Where you sleep","Your contribution"], continue:"Continue", back:"Back", submit:"Submit registration",
        name:"Full name", arrival:"Arrival day", contribTitle:"Your contribution",
        contribNote:"Pay on a sliding scale — whatever feels right for you. Accommodation is not included.",
@@ -701,7 +702,8 @@ const T = {
        bankCompleteNote:"Note: Registration is only complete once the contribution has been transferred!",
        errSubmitH:"Almost there.", errSubmitP:"Your registration couldn't be saved automatically. Please contact the organizers so they can register you manually — you can already transfer using the bank details below.",
        dupH:"You're already on the list!", dupP:"This email address or phone number is already registered. If that seems wrong, or you'd like to change your details, please contact the organizers.",
-       capacityFullNote:"The congress is currently full — new registrations will join the waiting list." }
+       capacityFullNote:"The congress is currently full — new registrations will join the waiting list.",
+       registrationClosedH:"Registration is closed.", registrationClosedP:"Der Goldene Kongress 2026 is already at capacity — we're no longer accepting new registrations, including for the waiting list. If you have questions, please reach out to the organizers." }
 };
 
 const HEADINGS = {
@@ -743,6 +745,15 @@ function setLang(l){
 let capacityInfo=null;
 function renderCapacityNote(){
   const el=document.getElementById('capacity-note');
+  const indicator=document.getElementById('step-indicator'), body=document.getElementById('form-body'), nav=document.getElementById('nav-row');
+  if(capacityInfo&&capacityInfo.closed){
+    if(indicator) indicator.style.display='none';
+    if(body) body.innerHTML=`<div class="q-progress" style="text-align:center;font-size:17px;font-weight:600;">${t().registrationClosedH}</div><p style="text-align:center;margin-top:10px;">${t().registrationClosedP}</p>`;
+    if(nav) nav.innerHTML='';
+    if(el) el.style.display='none';
+    return;
+  }
+  if(indicator) indicator.style.display='';
   if(!el||!capacityInfo||!capacityInfo.full){ if(el) el.style.display='none'; return; }
   el.textContent=t().capacityFullNote;
   el.style.display='block';

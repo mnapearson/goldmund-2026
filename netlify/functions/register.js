@@ -11,6 +11,12 @@ const HOTEL_COST = 112;
 // real spot immediately, without needing a manual capacity adjustment.
 const MAX_CAPACITY = 110;
 
+// Hard stop on all new submissions -- including the waitlist. Set by hand
+// when the organizers decide to close registration entirely, rather than
+// relying on MAX_CAPACITY (which would still let people join the waitlist).
+// Keep in sync with REGISTRATION_CLOSED in capacity.js.
+const REGISTRATION_CLOSED = true;
+
 function bankBlock() {
   return {
     bank: process.env.PAYMENT_BANK || '',
@@ -54,6 +60,10 @@ async function writeRegistrationRow(buildRow, initialRows) {
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ ok: false, error: 'Method not allowed' }) };
+  }
+
+  if (REGISTRATION_CLOSED) {
+    return { statusCode: 403, body: JSON.stringify({ ok: false, code: 'closed', error: 'Registration is closed.' }) };
   }
 
   let data;
