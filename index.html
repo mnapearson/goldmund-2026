@@ -1108,8 +1108,8 @@ async function loadAdmin(){
 }
 function renderAdminStats(){
   const w=document.getElementById('admin-stats'); const total=adminEntries.length; const sum=adminEntries.reduce((a,e)=>a+(e.contribution||0),0);
-  const paid=adminEntries.filter(e=>isPaidStatus(e.paymentStatus)).length;
   const activeCount=adminEntries.filter(e=>!e.waitlisted&&!e.cancelled).length;
+  const paid=adminEntries.filter(e=>!e.cancelled&&!e.waitlisted&&isPaidStatus(e.paymentStatus)).length;
   const waitlistCount=adminEntries.filter(e=>e.waitlisted&&!e.cancelled).length;
   const cancelledEntries=adminEntries.filter(e=>e.cancelled);
   const needsRefund=adminEntries.filter(e=>e.needsRefund).length;
@@ -1117,7 +1117,7 @@ function renderAdminStats(){
   const fc={M:0,S:0,R:0,T:0,K:0}; adminEntries.forEach(e=>{if(e.topFaction&&!e.cancelled&&!e.waitlisted)fc[e.topFaction]++;});
   w.innerHTML=`<div class="stat-card"><div class="num">${total}</div><div class="lab">Registrations</div></div>
     <div class="stat-card"><div class="num">€${sum}</div><div class="lab">Pledged</div></div>
-    <div class="stat-card"><div class="num">${paid}/${total}</div><div class="lab">Paid</div></div>
+    <div class="stat-card"><div class="num">${paid}/${activeCount}</div><div class="lab">Paid</div></div>
     <div class="stat-card"><div class="num">${activeCount}/110</div><div class="lab">Capacity</div></div>
     <div class="stat-card"><div class="num">${waitlistCount}</div><div class="lab">Waitlist</div></div>
     <div class="stat-card"><div class="num">${cancelledEntries.length}</div><div class="lab">Cancelled</div></div>
