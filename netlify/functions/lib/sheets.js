@@ -7,16 +7,33 @@ const SHEET_NAME = 'Registrations';
 // is written here for manual copy-paste into a real draft.
 const DRAFT_SHEET_NAME = 'Faction Reveal — Email Drafts';
 const DRAFT_SHEET_HEADERS = ['Name', 'Email', 'Subject', 'Body'];
-// Data-write range (writeRowAt) covers A:AI -- unlike group-membership/invite
-// history (V-Y), which is genuinely unknown until later functions fill it
-// in, Waitlisted (Z), Hotel Payment Status (AB), Cancelled (AD), Needs
-// Refund (AE), and Needs Follow-up (AG) ARE known at signup time (computed
-// or defaulted false), so they're written alongside the rest of the row.
+// Data-write range covers A:AI -- unlike group-membership/invite history
+// (V-Y), which is genuinely unknown until later functions fill it in,
+// Waitlisted (Z), Hotel Payment Status (AB), Cancelled (AD), Needs Refund
+// (AE), and Needs Follow-up (AG) ARE known at signup time (computed or
+// defaulted false), so they're written alongside the rest of the row.
 // Hotel Notified At (AA), Hotel Last Reminded At (AC), Arrival Notice Sent
 // At (AF), Faction Reveal Sent At (AH), and Faction Reveal Draft Created At
 // (AI) stay blank until the relevant notify function fills them in.
-const DATA_RANGE = `${SHEET_NAME}!A2:AI`;
+// Includes the header row (A1, not A2) -- getAllRows() reads it on every
+// call to detect the sheet's current physical column order (see below).
+const DATA_RANGE = `${SHEET_NAME}!A1:AI`;
 const HEADER_RANGE = `${SHEET_NAME}!A1:AI1`;
+
+// Canonical field order. Every other file in this codebase reads and
+// writes rows using THESE indices -- r[0] is always Reg ID, r[8] is always
+// Top Faction, r[16] is always Telegram Chat ID, and so on -- regardless
+// of which physical column that field actually sits in on the live sheet.
+// This matters because the physical order isn't stable: someone dragged
+// Payment Status and Hotel Cost to sit right after Name at one point,
+// which would otherwise have silently corrupted every positional read and
+// write in the codebase (e.g. the bot's /start handler would have started
+// writing chat IDs into the Submitted At column). getAllRows() and the
+// write helpers below are the only code that has to know about the
+// sheet's actual physical layout -- they resolve it fresh from the live
+// header row on every call and translate to/from these canonical indices,
+// so a human reordering columns in the Sheet UI can't desync the rest of
+// the app from the data again.
 const HEADERS = [
   'Reg ID', 'Name', 'Email', 'Telegram', 'Phone', 'Arrival', 'Housing', 'Contribution (€)',
   'Top Faction', 'M', 'S', 'R', 'T', 'K', 'Payment Status', 'Submitted At', 'Telegram Chat ID', 'Language',
@@ -29,7 +46,51 @@ const HEADERS = [
   'Faction Reveal Sent At', 'Faction Reveal Draft Created At',
 ];
 
+function colLetterFor(index) {
+  let s = '';
+  let i = index + 1;
+  while (i > 0) {
+    const m = (i - 1) % 26;
+    s = String.fromCharCode(65 + m) + s;
+    i = Math.floor((i - 1) / 26);
+  }
+  return s;
+}
+
+function colIndexFor(letter) {
+  let i = 0;
+  for (const ch of letter) i = i * 26 + (ch.charCodeAt(0) - 64);
+  return i - 1;
+}
+
+// Matches the live header row (by exact trimmed text) against HEADERS to
+// find which physical column each canonical field currently lives in. A
+// header cell whose text isn't a recognized field name is ignored
+// (harmless leftover). A canonical field with no matching header cell
+// anywhere -- shouldn't normally happen, since ensureHeaders() fills
+// blanks -- falls back to its own canonical position rather than losing
+// that column's data entirely.
+function buildCanonicalToPhysical(headerRow) {
+  const canonicalToPhysical = new Array(HEADERS.length).fill(-1);
+  const claimed = new Set();
+  (headerRow || []).forEach((cell, physicalIdx) => {
+    const name = (cell || '').trim();
+    if (!name) return;
+    const canonicalIdx = HEADERS.findIndex((h, ci) => h === name && !claimed.has(ci));
+    if (canonicalIdx !== -1) {
+      canonicalToPhysical[canonicalIdx] = physicalIdx;
+      claimed.add(canonicalIdx);
+    }
+  });
+  canonicalToPhysical.forEach((v, ci) => { if (v === -1) canonicalToPhysical[ci] = ci; });
+  return canonicalToPhysical;
+}
+
 let sheetsClient = null;
+// Cached per warm container, refreshed on every getAllRows() call (which
+// almost every write in this codebase calls first via findRowByRegId /
+// findRowByChatId) -- see buildCanonicalToPhysical's comment above.
+let columnMapCache = null;
 
 async function getSheets() {
   if (sheetsClient) return sheetsClient;
@@ -42,13 +103,30 @@ async function getSheets() {
   return sheetsClient;
 }
 
+// Used by write helpers that don't call getAllRows() first within the same
+// invocation. Falls back to a dedicated header-row fetch if the cache is
+// cold (e.g. a fresh warm container hitting a write path first).
+async function getColumnMap() {
+  if (columnMapCache) return columnMapCache;
+  const sheets = await getSheets();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    range: HEADER_RANGE,
+  });
+  columnMapCache = buildCanonicalToPhysical((res.data.values && res.data.values[0]) || []);
+  return columnMapCache;
+}
+
 async function getAllRows() {
   const sheets = await getSheets();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
     range: DATA_RANGE,
   });
-  return res.data.values || [];
+  const values = res.data.values || [];
+  const headerRow = values[0] || [];
+  columnMapCache = buildCanonicalToPhysical(headerRow);
+  return values.slice(1).map((physicalRow) => columnMapCache.map((physIdx) => physicalRow[physIdx] ?? ''));
 }
 
 // Fills in any blank header cells with the expected column names — never
@@ -84,13 +162,16 @@ async function ensureHeaders() {
 // blank. Writing to a precise A{row}:T{row} range removes that
 // ambiguity entirely: there is no table to detect, just a fixed
 // address for the write to land on.
-async function writeRowAt(rowNumber, row) {
+async function writeRowAt(rowNumber, canonicalRow) {
   const sheets = await getSheets();
+  const canonicalToPhysical = await getColumnMap();
+  const physicalRow = new Array(HEADERS.length).fill('');
+  canonicalRow.forEach((val, ci) => { physicalRow[canonicalToPhysical[ci]] = val; });
   await sheets.spreadsheets.values.update({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
     range: `${SHEET_NAME}!A${rowNumber}:AI${rowNumber}`,
     valueInputOption: 'USER_ENTERED',
-    requestBody: { values: [row] },
+    requestBody: { values: [physicalRow] },
   });
 }
 
@@ -150,11 +231,17 @@ async function findRowByChatId(chatId) {
   return { rowNumber: idx + 2, row: rows[idx] };
 }
 
+// colLetter is the CANONICAL column letter (i.e. what that field's letter
+// would be if the sheet were still in its original A-AI order) -- callers
+// throughout this codebase don't need to know or care what physical
+// column that translates to right now.
 async function updateCell(rowNumber, colLetter, value) {
   const sheets = await getSheets();
+  const canonicalToPhysical = await getColumnMap();
+  const physicalLetter = colLetterFor(canonicalToPhysical[colIndexFor(colLetter)]);
   await sheets.spreadsheets.values.update({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!${colLetter}${rowNumber}`,
+    range: `${SHEET_NAME}!${physicalLetter}${rowNumber}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [[value]] },
   });
@@ -164,15 +251,20 @@ async function updateCell(rowNumber, colLetter, value) {
 // a per-row loop calling updateCell twice per row can rack up enough write
 // requests in a single burst to trip Google's per-minute write quota
 // (hit in practice with ~20 calls across 10 rows in an 8s check-membership run).
-// updates: [{ rowNumber, colLetter, value }, ...]
+// updates: [{ rowNumber, colLetter, value }, ...]. colLetter is CANONICAL
+// (see updateCell's comment above).
 async function batchUpdateCells(updates) {
   if (!updates.length) return;
   const sheets = await getSheets();
+  const canonicalToPhysical = await getColumnMap();
   await sheets.spreadsheets.values.batchUpdate({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
     requestBody: {
       valueInputOption: 'USER_ENTERED',
-      data: updates.map((u) => ({ range: `${SHEET_NAME}!${u.colLetter}${u.rowNumber}`, values: [[u.value]] })),
+      data: updates.map((u) => ({
+        range: `${SHEET_NAME}!${colLetterFor(canonicalToPhysical[colIndexFor(u.colLetter)])}${u.rowNumber}`,
+        values: [[u.value]],
+      })),
     },
   });
 }
