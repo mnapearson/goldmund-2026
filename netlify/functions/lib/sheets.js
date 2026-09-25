@@ -7,18 +7,15 @@ const SHEET_NAME = 'Registrations';
 // is written here for manual copy-paste into a real draft.
 const DRAFT_SHEET_NAME = 'Faction Reveal — Email Drafts';
 const DRAFT_SHEET_HEADERS = ['Name', 'Email', 'Subject', 'Body'];
-// Data-write range covers A:AI -- unlike group-membership/invite history
-// (V-Y), which is genuinely unknown until later functions fill it in,
-// Waitlisted (Z), Hotel Payment Status (AB), Cancelled (AD), Needs Refund
-// (AE), and Needs Follow-up (AG) ARE known at signup time (computed or
-// defaulted false), so they're written alongside the rest of the row.
-// Hotel Notified At (AA), Hotel Last Reminded At (AC), Arrival Notice Sent
-// At (AF), Faction Reveal Sent At (AH), and Faction Reveal Draft Created At
-// (AI) stay blank until the relevant notify function fills them in.
-// Includes the header row (A1, not A2) -- getAllRows() reads it on every
-// call to detect the sheet's current physical column order (see below).
-const DATA_RANGE = `${SHEET_NAME}!A1:AI`;
-const HEADER_RANGE = `${SHEET_NAME}!A1:AI1`;
+// Fetched wide (through BZ), well past the 35 canonical fields, so extra
+// columns someone adds by hand on the live sheet (e.g. a "Payment request"
+// tracking column someone inserted) don't get silently truncated out of
+// the read -- they're just ignored by buildCanonicalToPhysical() below,
+// since their header text won't match any canonical field name. Includes
+// the header row (A1, not A2) -- getAllRows() reads it on every call to
+// detect the sheet's current physical column order (see below).
+const DATA_RANGE = `${SHEET_NAME}!A1:BZ`;
+const HEADER_RANGE = `${SHEET_NAME}!A1:BZ1`;
 
 // Canonical field order. Every other file in this codebase reads and
 // writes rows using THESE indices -- r[0] is always Reg ID, r[8] is always
@@ -165,11 +162,16 @@ async function ensureHeaders() {
 async function writeRowAt(rowNumber, canonicalRow) {
   const sheets = await getSheets();
   const canonicalToPhysical = await getColumnMap();
-  const physicalRow = new Array(HEADERS.length).fill('');
+  // Sized to the furthest-right canonical field's actual physical position,
+  // not a hardcoded letter -- a stray extra column inserted somewhere in
+  // the middle of the sheet (see DATA_RANGE's comment) can push a
+  // canonical field further right than its own index would suggest.
+  const maxPhysicalIdx = Math.max(...canonicalToPhysical);
+  const physicalRow = new Array(maxPhysicalIdx + 1).fill('');
   canonicalRow.forEach((val, ci) => { physicalRow[canonicalToPhysical[ci]] = val; });
   await sheets.spreadsheets.values.update({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A${rowNumber}:AI${rowNumber}`,
+    range: `${SHEET_NAME}!A${rowNumber}:${colLetterFor(maxPhysicalIdx)}${rowNumber}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values: [physicalRow] },
   });
