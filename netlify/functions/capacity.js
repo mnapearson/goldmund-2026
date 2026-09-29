@@ -7,7 +7,7 @@ const { getAllRows } = require('./lib/sheets');
 const MAX_CAPACITY = 110;
 
 // Keep in sync with REGISTRATION_CLOSED in register.js.
-const REGISTRATION_CLOSED = true;
+const REGISTRATION_CLOSED = false;
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'GET') {

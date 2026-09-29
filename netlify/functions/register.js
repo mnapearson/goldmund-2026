@@ -14,8 +14,12 @@ const MAX_CAPACITY = 110;
 // Hard stop on all new submissions -- including the waitlist. Set by hand
 // when the organizers decide to close registration entirely, rather than
 // relying on MAX_CAPACITY (which would still let people join the waitlist).
-// Keep in sync with REGISTRATION_CLOSED in capacity.js.
-const REGISTRATION_CLOSED = true;
+// Keep in sync with REGISTRATION_CLOSED in capacity.js. Reopened after
+// cancellations started freeing up spots that organizers wanted to fill
+// with replacements -- MAX_CAPACITY's live activeCount check below already
+// handles confirming a replacement vs waitlisting them correctly on its
+// own, no separate flow needed.
+const REGISTRATION_CLOSED = false;
 
 function bankBlock() {
   return {
